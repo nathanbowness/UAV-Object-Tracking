@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+encoding//Interfaces/Commands.py=cp1252
+encoding//Interfaces/ConversionFuncs.py=cp1252
+encoding//Interfaces/Ethernet/Commands.py=cp1252
+encoding//Interfaces/Ethernet/IPConnection.py=cp1252
+encoding//Interfaces/Ethernet/ScanRadars.py=cp1252
