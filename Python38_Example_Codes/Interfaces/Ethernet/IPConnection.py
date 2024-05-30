@@ -40,8 +40,9 @@ class IPConnection(object):
             self.sock.connect((self.etherParams.ip, self.etherParams.port))
             #self.show_message("Connection to "+self.etherParams.ip+":"+str(self.etherParams.port)+" established.")
             return True
-        except:
+        except Exception as e:
             self.sock = None
+            print(f"Connection to {self.etherParams.ip}:{self.etherParams.port} failed: {e}")
             #self.show_message("Connection to "+self.etherParams.ip+":"+str(self.etherParams.port)+" failed.")
             return False
     

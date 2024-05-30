@@ -35,6 +35,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from time import time, sleep
 
+from sklearn.cluster import DBSCAN
+
 
 '''
 This example class loads all necessary parameter and data classes. It has functions
@@ -56,7 +58,7 @@ class Main():
         
         # load the Ethernet parameters and change them
         self.etherParams = EthernetParams()
-        self.etherParams.ip = "192.168.0.2"
+        self.etherParams.ip = "10.0.0.59"
         self.etherParams.port = 1024
         
         self.myInterface = None
@@ -344,7 +346,7 @@ print("")
 '''
 Frequency domain example
 '''
-if 1:
+if 0:
     if main.connected:
         # Specify a measurement type, let the Radar perform it and read the data
         measurement = "UP-Ramp"
@@ -405,7 +407,7 @@ if 1:
 '''
 Time domain example
 '''
-if 1:
+if 0:
     if main.connected:
         # Specify a measurement type, let the Radar perform it and read the data
         measurement = "UP-Ramp"
@@ -442,26 +444,100 @@ if 1:
         # Show the plot
         plt.show()
         
+def deduplicate_data(target_data, eps_distance=0.1, eps_angle=1, min_samples=2):
+    processed_data = {}
+
+    for target_id, coords in target_data.items():
+        # Prepare data for clustering
+        X = np.array(list(zip(coords['distances'], coords['angles'])))
+
+        # Apply DBSCAN
+        db = DBSCAN(eps=max(eps_distance, eps_angle), min_samples=min_samples).fit(X)
+        labels = db.labels_
+
+        # Find indices of core samples
+        unique_labels = set(labels)
+        clusters = {label: [] for label in unique_labels if label != -1}  # exclude noise points
+
+        # Aggregate data points by cluster
+        for label, point in zip(labels, X):
+            if label != -1:  # ignore noise
+                clusters[label].append(point)
+
+        # Compute centroids of clusters
+        centroid_distances = []
+        centroid_angles = []
+        times = []  # Assuming each cluster's time is the average of times of its points
+        for label, points in clusters.items():
+            points = np.array(points)
+            centroid_distances.append(np.mean(points[:, 0]))
+            centroid_angles.append(np.mean(points[:, 1]))
+            # Extract times for these points (average or middle)
+            time_indices = [i for i, l in enumerate(labels) if l == label]
+            times.append(np.mean([coords['times'][i] for i in time_indices]))
+
+        processed_data[target_id] = {'times': times, 'distances': centroid_distances, 'angles': centroid_angles}
+
+    return processed_data
+
+def simple_deduplicate(target_data, dist_threshold=0.1, angle_threshold=1):
+    processed_data = {}
+
+    for target_id, coords in target_data.items():
+        # Initialize lists for storing processed data
+        processed_times = []
+        processed_distances = []
+        processed_angles = []
+
+        # Iterate over all data points for this target
+        for time, dist, angle in zip(coords['times'], coords['distances'], coords['angles']):
+            # Check if the current point is close to any of the already processed points
+            is_duplicate = False
+            for p_dist, p_angle in zip(processed_distances, processed_angles):
+                if abs(dist - p_dist) <= dist_threshold and abs(angle - p_angle) <= angle_threshold:
+                    is_duplicate = True
+                    break
+
+            # If no close point was found, add the current point to the processed lists
+            if not is_duplicate:
+                processed_times.append(time)
+                processed_distances.append(dist)
+                processed_angles.append(angle)
+
+        # Store processed data for the current target
+        processed_data[target_id] = {
+            'times': processed_times,
+            'distances': processed_distances,
+            'angles': processed_angles
+        }
+
+    return processed_data
+        
 '--------------------------------------------------------------------------------------------'
 '''
 Human Tracker example
 '''
-if 0:
+# Initialize data storage
+target_data = {}
+if 1:
     # Get the actual Human Tracker parameters
     main.GetHtParams()
     
     # Change some of the Human Tracker parameters
-    main.htParams.minDistance = 10
-    main.htParams.nRefPulses = 50
+    main.htParams.minDistance = 0
+    main.htParams.nRefPulses = 100
+    # main.htParams.maxLostDetect = 10
+    main.htParams.overThreshold = 30
     # ...
     
     # Send the changed parameters to the Radar Module
-    print("Radar Module is performing %d initial measurements."%(main.htParams.nRefPulses))     
-    print("Please wait for %.2f seconds.\n"%(main.htParams.timeInterval*main.htParams.nRefPulses/1000.))    
+    print("Radar Module is performing %d initial measurements."%(main.htParams.nRefPulses)) 
+    print("Please wait for %.2f seconds.\n"%(main.htParams.timeInterval*main.htParams.nRefPulses/1000.))
     main.SetHtParams()
     
-    time_interval = 100     # [ms]
-    n_measurements = 100    # Number of measurements
+    time_interval = 50     # [ms]
+    n_measurements = 500    # Number of measurements
+    start_time = time()     # Record the overall start time
     
     # Perform a number of measurements specified by n_measurements e.g. in a specified time interval 
     for n in range(n_measurements):
@@ -474,11 +550,21 @@ if 0:
         # Measurement was faster than the specified time interval? -> wait to fulfill it
         if dt < time_interval:
             sleep((time_interval - dt)/1000.)
+            
+        measurement_time = time() - start_time    # Time since start in seconds
         
         # Print some of the measured results
         print("Finished Human Tracker measurement No.: %d"%(n+1))
         print("Number of targets found: %d"%(main.HT_Targets.nTargets))
         for m in range(main.HT_Targets.nTargets):
+            # Collect data for processing
+            target_id = main.HT_Targets.id[m]
+            if target_id not in target_data:
+                target_data[target_id] = {'times': [], 'distances': [], 'angles': []}
+            target_data[target_id]['times'].append(measurement_time)
+            target_data[target_id]['distances'].append(main.HT_Targets.dist[m])
+            target_data[target_id]['angles'].append(main.HT_Targets.angle[m])
+            
             print("-------------------")
             print("Target No.: %d"%(main.HT_Targets.id[m]))
             print("Distance: %.3f m"%(main.HT_Targets.dist[m]))
@@ -487,7 +573,35 @@ if 0:
             print("Tracked: %d"%(main.HT_Targets.tracked[m]))
             print("Count: %d"%(main.HT_Targets.count[m]))
         print("==========================================")
-            
+    
+    # Process the data using the clustering-based deduplication method
+    processed_target_data = simple_deduplicate(target_data)
+    
+    # Plot Distance vs. Time and Angle vs. Time
+    plt.figure(figsize=(12, 10))
+
+    # Distance vs. Time
+    plt.subplot(2, 1, 1)  # 2 rows, 1 column, first plot
+    for target_id, coords in processed_target_data.items():
+        plt.plot(coords['times'], coords['distances'], marker='o', linestyle='-', label=f'Target {target_id}')
+    plt.title('Distance vs. Time')
+    plt.xlabel('Time (seconds)')
+    plt.ylabel('Distance (m)')
+    plt.grid(True)
+    plt.legend()
+
+    # Angle vs. Time
+    plt.subplot(2, 1, 2)  # 2 rows, 1 column, second plot
+    for target_id, coords in processed_target_data.items():
+        plt.plot(coords['times'], coords['angles'], marker='o', linestyle='-', label=f'Target {target_id}')
+    plt.title('Angle vs. Time')
+    plt.xlabel('Time (seconds)')
+    plt.ylabel('Angle (degrees)')
+    plt.grid(True)
+    plt.legend()
+
+    plt.tight_layout()  # Adjust layout to prevent overlap
+    plt.show()
 
 # At the end disconnect the interface
 main.Disconnect()
