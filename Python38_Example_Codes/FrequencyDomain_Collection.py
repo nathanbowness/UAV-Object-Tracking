@@ -237,8 +237,8 @@ main.GetSysParams()
 print("Frequency [MHz]: ", main.sysParams.minFreq)
 print("Bandwidth [MHz]: ", main.sysParams.manualBW)
 print("Ramp-time [ms]: ", main.sysParams.t_ramp)
-print("Number Points: ", main.sysParams.freq_points)          
-print("Bin Size (Resolution) [m]: ", main.sysParams.tic / 1000000) 
+print("Number Points: ", main.sysParams.freq_points)      
+print("Bin Size (Resolution) [m]: ", main.sysParams.tic / 1000000)
 print("")
 
 
@@ -314,35 +314,6 @@ if main.connected:
             channels_fd_Q2[rb].append(fd_data[3][i])
 
         # time.sleep(1)  # Adjust the sleep time as necessary
-                        
-# Function to plot FD data for each range bin between specified minimum and maximum bins
-def plot_fd_range_bins(min_bin, max_bin):
-    selected_bins = [rb for rb in range_bins if min_bin <= rb <= max_bin]
-    num_bins = min(8, len(selected_bins))  # Ensure we only plot up to 8 bins
-    
-    fig, axs = plt.subplots(num_bins, 1, figsize=(12, 3 * num_bins))
-    
-    # If there's only one subplot, axs will not be an array
-    if num_bins == 1:
-        axs = [axs]
-
-    for i, rb in enumerate(selected_bins[:8]):
-        if channels_fd_I1[rb]:
-            axs[i].plot(timestamps, channels_fd_I1[rb], label="I1")
-        if channels_fd_Q1[rb]:
-            axs[i].plot(timestamps, channels_fd_Q1[rb], label="Q1")
-        if channels_fd_I2[rb]:
-            axs[i].plot(timestamps, channels_fd_I2[rb], label="I2")
-        if channels_fd_Q2[rb]:
-            axs[i].plot(timestamps, channels_fd_Q2[rb], label="Q2")
-        axs[i].set_title(f"Frequency-Domain Data for Range Bin {rb:.2f} meters")
-        axs[i].set_xlabel("Time (s)")
-        axs[i].set_ylabel("Magnitude [dBm]")
-        axs[i].legend()
-        axs[i].grid(True)
-    
-    plt.tight_layout()
-    plt.show()
     
 # Function to plot FD data for each range bin between specified minimum and maximum bins
 def plot_fd_range_bins_in_grid(min_bin, max_bin):
@@ -362,13 +333,13 @@ def plot_fd_range_bins_in_grid(min_bin, max_bin):
             title = f"FD for Range Bin {rb:.2f} meters"
         
         if channels_fd_I1[rb]:
-            axs[i].plot(timestamps, channels_fd_I1[rb], label="Channel 1")
+            axs[i].plot(timestamps, channels_fd_I1[rb], label="I1")
         if channels_fd_Q1[rb]:
-            axs[i].plot(timestamps, channels_fd_Q1[rb], label="Channel 2")
+            axs[i].plot(timestamps, channels_fd_Q1[rb], label="Q1")
         if channels_fd_I2[rb]:
-            axs[i].plot(timestamps, channels_fd_I2[rb], label="Channel 3")
+            axs[i].plot(timestamps, channels_fd_I2[rb], label="I2")
         if channels_fd_Q2[rb]:
-            axs[i].plot(timestamps, channels_fd_Q2[rb], label="Channel 4")
+            axs[i].plot(timestamps, channels_fd_Q2[rb], label="Q2")
         axs[i].set_title(title)
         axs[i].set_xlabel("Time (s)")
         axs[i].set_ylabel("Magnitude [dBm]")
