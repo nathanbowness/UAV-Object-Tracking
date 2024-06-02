@@ -10,6 +10,20 @@
             "request": "launch",
             "program": "${workspaceFolder}/Python38_Example_Codes/Radar_Communication_Example.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Get Time Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Python38_Example_Codes/TimeData_Collection.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: FD Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Python38_Example_Codes/FrequencyDomain_Collection.py",
+            "console": "integratedTerminal"
         }
     ]
 }
