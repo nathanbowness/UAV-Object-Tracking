@@ -346,7 +346,7 @@ print("")
 '''
 Frequency domain example
 '''
-if 0:
+if 1:
     if main.connected:
         # Specify a measurement type, let the Radar perform it and read the data
         measurement = "UP-Ramp"
@@ -519,7 +519,7 @@ Human Tracker example
 '''
 # Initialize data storage
 target_data = {}
-if 1:
+if 0:
     # Get the actual Human Tracker parameters
     main.GetHtParams()
     
