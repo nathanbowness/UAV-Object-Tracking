@@ -249,18 +249,18 @@ measurement_duration = 25  # Duration to collect data in seconds
 n_samples = 1024 # always 1024 samples per channel
 range_bins = [main.sysParams.tic*(n+1)/main.sysParams.zero_pad/1.0e6 for n in range(n_samples)] # x_data in Meters
 
-channels_1 = {}
-channels_2 = {}
-channels_3 = {}
-channels_4 = {}
+channels_I1 = {}
+channels_Q1 = {}
+channels_I2 = {}
+channels_Q2 = {}
 timestamps = []
 
 # Initialize dictionaries with range bins as keys
 for rb in range_bins:
-    channels_1[rb] = []
-    channels_2[rb] = []
-    channels_3[rb] = []
-    channels_4[rb] = []
+    channels_I1[rb] = []
+    channels_Q1[rb] = []
+    channels_I2[rb] = []
+    channels_Q2[rb] = []
 
 print("Starting to collect data.")
 
@@ -282,16 +282,16 @@ if main.connected:
             # Store data by range bins in the corresponding channel dictionary
             if ch == 0:
                 for i, rb in enumerate(range_bins):
-                    channels_1[rb].append(td_data[i])
+                    channels_I1[rb].append(td_data[i])
             elif ch == 1:
                 for i, rb in enumerate(range_bins):
-                    channels_2[rb].append(td_data[i])
+                    channels_Q1[rb].append(td_data[i])
             elif ch == 2:
                 for i, rb in enumerate(range_bins):
-                    channels_3[rb].append(td_data[i])
+                    channels_I2[rb].append(td_data[i])
             elif ch == 3:
                 for i, rb in enumerate(range_bins):
-                    channels_4[rb].append(td_data[i])
+                    channels_Q2[rb].append(td_data[i])
 
         # time.sleep(1)  # Adjust the sleep time as necessary
             
@@ -300,21 +300,27 @@ def plot_td_range_bins(min_bin, max_bin):
     selected_bins = [rb for rb in range_bins if min_bin <= rb <= max_bin]
     num_bins = min(20, len(selected_bins))  # Ensure we only plot up to 20 bins
     
-    fig, axs = plt.subplots(4, 5, figsize=(24, 20))  # 4 rows by 5 columns
+    fig, axs = plt.subplots(5, 4, figsize=(28, 20))  # 4 rows by 5 columns
     
     # Flatten axs array for easy iteration
     axs = axs.flatten()
     
     for i, rb in enumerate(selected_bins[:20]):
-        if channels_1[rb]:
-            axs[i].plot(timestamps, channels_1[rb], label="Channel 1")
-        if channels_2[rb]:
-            axs[i].plot(timestamps, channels_2[rb], label="Channel 2")
-        if channels_3[rb]:
-            axs[i].plot(timestamps, channels_3[rb], label="Channel 3")
-        if channels_4[rb]:
-            axs[i].plot(timestamps, channels_4[rb], label="Channel 4")
-        axs[i].set_title(f"Time-Domain Data for Range Bin {rb:.2f} meters")
+        previous_bin = selected_bins[i-1] if i > 0 else None
+        if previous_bin:
+            title = f"TD for Range {previous_bin:.2f}m - {rb:.2f}m"
+        else:
+            title = f"TD for Range Bin {rb:.2f} meters"
+        
+        if channels_I1[rb]:
+            axs[i].plot(timestamps, channels_I1[rb], label="I1")
+        if channels_Q1[rb]:
+            axs[i].plot(timestamps, channels_Q1[rb], label="Q1")
+        if channels_I2[rb]:
+            axs[i].plot(timestamps, channels_I2[rb], label="I2")
+        if channels_Q2[rb]:
+            axs[i].plot(timestamps, channels_Q2[rb], label="Q2")
+        axs[i].set_title(title)
         axs[i].set_xlabel("Time (s)")
         axs[i].set_ylabel("Amplitude")
         axs[i].legend()
@@ -328,7 +334,7 @@ def plot_td_range_bins(min_bin, max_bin):
     plt.show()
 
 # Specify the range of bins to plot
-min_bin = 0.25  # Example minimum range bin value in meters
+min_bin = 0.23  # Example minimum range bin value in meters
 max_bin = 4.5  # Example maximum range bin value in meters
 plot_td_range_bins(min_bin, max_bin)
 
