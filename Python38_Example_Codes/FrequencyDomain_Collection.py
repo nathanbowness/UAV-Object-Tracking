@@ -223,6 +223,7 @@ main.sysParams.manualBW = 600
 main.sysParams.t_ramp = 7
 main.sysParams.active_RX_ch = 15
 main.sysParams.freq_points = 40 # Total distance, tic * freq_points
+main.sysParams.FFT_data_type = 2
 
 # Check if the frontend is off
 if main.sysParams.frontendEn == 0:
