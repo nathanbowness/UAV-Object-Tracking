@@ -1,6 +1,6 @@
 # UAV-Object-Tracking (CSI 6900)
 
-Currently in progress. But this project's goal is to create software that can be used to track UAV using both live Radar Sensor data and Video. 
+Currently in progress. But this project's goal is to create software that can be used to track UAV using both live Radar Sensor data and Video.  
 
 # Setup Requirements - Using Docker and VSCode
 - If you have Docker installed on your computer, you can leverage developer containers to quickly run this project.
