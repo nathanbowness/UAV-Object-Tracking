@@ -3,7 +3,6 @@ import csv
 import numpy as np
 
 def read_data_from_csv(input_file):
-
     data = {}
     
     with open(input_file, 'r') as csvfile:
@@ -69,9 +68,66 @@ def plot_fd_range_bins_in_grid(data, min_bin, max_bin):
         fig.delaxes(axs[j])
 
     plt.tight_layout()
+    plt.show()   
+
+def prepare_heatmap_data(data, min_bin, max_bin):
+    timestamps = sorted(data.keys())
+    range_bins = sorted(data[timestamps[0]].keys())
+    
+    selected_bins = [rb for rb in range_bins if min_bin <= rb <= max_bin]
+    num_bins = len(selected_bins)
+    num_timestamps = len(timestamps)
+    
+    heatmap_data = np.zeros((num_timestamps, num_bins))
+    
+    for t_idx, timestamp in enumerate(timestamps):
+        for r_idx, range_bin in enumerate(selected_bins):
+            if range_bin in data[timestamp]:
+                heatmap_data[t_idx, r_idx] = data[timestamp][range_bin][0]  # Use I1 signal for example
+    
+    return heatmap_data, timestamps, selected_bins
+
+def plot_heatmap(data, min_bin, max_bin):
+    heatmap_data, timestamps, selected_bins = prepare_heatmap_data(data, min_bin, max_bin)
+    
+    fig, ax = plt.subplots(figsize=(12, 8))
+    cax = ax.imshow(heatmap_data, aspect='auto', cmap='jet', origin='lower', extent=[min_bin, max_bin, 0, len(timestamps)])
+    ax.set_title('Raw Radar Data Heatmap')
+    ax.set_xlabel('Slant Range (m)')
+    ax.set_ylabel('Measurement Time (s)')
+    fig.colorbar(cax, ax=ax, label='Signal Power Ratio (dBm)')
+    
+    plt.tight_layout()
     plt.show()
     
+def plot_comparison_heatmaps(raw_data, processed_data, min_bin, max_bin):
+    raw_heatmap_data, timestamps, selected_bins = prepare_heatmap_data(raw_data, min_bin, max_bin)
+    processed_heatmap_data, _, _ = prepare_heatmap_data(processed_data, min_bin, max_bin)
     
-data = read_data_from_csv('samples.csv')
-plot_fd_range_bins_in_grid(data, 0, 2)  # Adjust min_range_bin, max_rang_bin sizes
-print("Finished plotting the data.")
+    fig, axs = plt.subplots(1, 2, figsize=(24, 8))
+
+    # Plot raw data heatmap
+    c1 = axs[0].imshow(raw_heatmap_data, aspect='auto', cmap='jet', origin='lower', extent=[min_bin, max_bin, 0, len(timestamps)])
+    axs[0].set_title('Raw Radar Data')
+    axs[0].set_xlabel('Slant Range (m)')
+    axs[0].set_ylabel('Measurement Time (s)')
+    fig.colorbar(c1, ax=axs[0], label='Signal Power Ratio (dBm)')
+
+    # Plot processed data heatmap
+    c2 = axs[1].imshow(processed_heatmap_data, aspect='auto', cmap='jet', origin='lower', extent=[min_bin, max_bin, 0, len(timestamps)])
+    axs[1].set_title('Processed Radar Data')
+    axs[1].set_xlabel('Slant Range (m)')
+    axs[1].set_ylabel('Measurement Time (s)')
+    fig.colorbar(c2, ax=axs[1], label='Signal Power Ratio (dBm)')
+
+    plt.tight_layout()
+    plt.show()
+    
+if __name__ == "__main__":
+    raw_data = read_data_from_csv('samples.csv')
+    min_bin = 0
+    max_bin = 2
+    
+    plot_fd_range_bins_in_grid(raw_data, 0, 2)  # Adjust min_range_bin, max_rang_bin sizes
+    plot_heatmap(raw_data, 0, 2)
+    print("Finished plotting the data.")
