@@ -17,7 +17,7 @@ def get_FD_data(radarModule: RadarModule):
     if radarModule.sysParams.FFT_data_type == 0:  # only magnitudes were transmitted
         mag_data = radarModule.FD_Data.data
     elif radarModule.sysParams.FFT_data_type == 2:  # real/imaginary 
-        comp_data = [complex(float(radarModule.FD_Data.data[n]), float(radarModule.FD_Data.data[n + 1])) for n in range(0, len(main.FD_Data.data), 2)]
+        comp_data = [complex(float(radarModule.FD_Data.data[n]), float(radarModule.FD_Data.data[n + 1])) for n in range(0, len(radarModule.FD_Data.data), 2)]
         mag_data = np.abs(comp_data)
     elif radarModule.sysParams.FFT_data_type in [1, 3]:  # magnitudes/phase or magnitudes/object angle
         mag_data = [radarModule.FD_Data.data[n] for n in range(0, len(radarModule.FD_Data.data), 2)]
@@ -29,7 +29,7 @@ def get_FD_data(radarModule: RadarModule):
             mag_data[n] = 20 * np.log10(mag_data[n] / 2.**21)
         except:
             mag_data[n] = min_dbm
-            
+    
     # Sort for active channels
     fd_data = []
     n = 0
@@ -53,6 +53,7 @@ def collect_save_freq_data(radarModule: RadarModule,
     if not radarModule.connected:
         exit("Please connect radar module.")
 
+    range_bins = get_range_bins(radarModule=radarModule)
     print("Collecting Data...")
     
     with open(output_file, 'w', newline='') as csvfile:
@@ -66,9 +67,13 @@ def collect_save_freq_data(radarModule: RadarModule,
             
             fd_data = get_FD_data(radarModule)
                     
-            # Write data to a file
-            row = [timestamp] + [item for sublist in fd_data for item in sublist]
-            writer.writerow(row)
+            # Write data to a CSV in the following format
+            # timestamp, range bin value, I1, Q1, I2, Q2 (the last 4 entries are the FD Magnitudes)
+            for rb_index in range(len(range_bins)):
+                row = [timestamp, range_bins[rb_index]]
+                for ch in range(4):
+                    row.append(fd_data[ch][rb_index])
+                writer.writerow(row)
     
             # Store data by range bins in the corresponding channel dictionary
             # for i, rb in enumerate(range_bins):
@@ -82,6 +87,7 @@ def collect_save_freq_data(radarModule: RadarModule,
 # Collect data
 radarModule = GetRadarModule(updatedSysParams=get_sys_params(), 
                              updatedEthernetConfig=get_ethernet_config())
+# radarModule = GetRadarModule(updatedEthernetConfig=get_ethernet_config())
 collect_save_freq_data(radarModule=radarModule, collectionDurationSec=5)
 
 

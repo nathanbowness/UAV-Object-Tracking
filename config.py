@@ -5,7 +5,7 @@ from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
 def get_sys_params():
     updatedSysParams = SysParams()
     updatedSysParams.minFreq = 24000
-    updatedSysParams.manualBW = 250
+    updatedSysParams.manualBW = 600
     updatedSysParams.t_ramp = 7
     updatedSysParams.active_RX_ch = 15
     updatedSysParams.freq_points = 512

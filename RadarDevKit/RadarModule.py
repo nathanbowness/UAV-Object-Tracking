@@ -295,7 +295,13 @@ def GetRadarModule(updatedSysParams: SysParams = None,
     
     # Change system params if specified, otherwise use defaults
     if updatedSysParams is not None:
-        radarModule.sysParams = updatedSysParams
+        radarModule.sysParams.minFreq = updatedSysParams.minFreq
+        radarModule.sysParams.manualBW = updatedSysParams.manualBW
+        radarModule.sysParams.t_ramp = updatedSysParams.t_ramp
+        radarModule.sysParams.active_RX_ch = updatedSysParams.active_RX_ch
+        radarModule.sysParams.freq_points = updatedSysParams.freq_points
+        radarModule.sysParams.FFT_data_type = updatedSysParams.FFT_data_type
+        
     
     # Check if the frontend is off
     if radarModule.sysParams.frontendEn == 0:
@@ -310,7 +316,9 @@ def GetRadarModule(updatedSysParams: SysParams = None,
         # Verify that the parameters have changed
         print("Frequency [MHz]: ", radarModule.sysParams.minFreq)
         print("Bandwidth [MHz]: ", radarModule.sysParams.manualBW)
-        print("Ramp-time [ms]: ", radarModule.sysParams.t_ramp)        
+        print("Ramp-time [ms]: ", radarModule.sysParams.t_ramp)
+        print("Number Points: ", radarModule.sysParams.freq_points)      
+        print("Bin Size (Resolution) [m]: ", radarModule.sysParams.tic / 1000000)
         print("")
         
     print("Connected to the radar.")

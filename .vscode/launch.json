@@ -12,6 +12,13 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python: Radar Plot Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/radar_object_detection.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Get Time Data",
             "type": "debugpy",
             "request": "launch",
