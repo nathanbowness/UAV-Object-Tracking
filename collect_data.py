@@ -88,6 +88,6 @@ def collect_save_freq_data(radarModule: RadarModule,
 radarModule = GetRadarModule(updatedSysParams=get_sys_params(), 
                              updatedEthernetConfig=get_ethernet_config())
 # radarModule = GetRadarModule(updatedEthernetConfig=get_ethernet_config())
-collect_save_freq_data(radarModule=radarModule, collectionDurationSec=5)
+collect_save_freq_data(radarModule=radarModule, collectionDurationSec=30)
 
 

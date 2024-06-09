@@ -91,7 +91,7 @@ def plot_heatmap(data, min_bin, max_bin):
     heatmap_data, timestamps, selected_bins = prepare_heatmap_data(data, min_bin, max_bin)
     
     fig, ax = plt.subplots(figsize=(12, 8))
-    cax = ax.imshow(heatmap_data, aspect='auto', cmap='jet', origin='lower', extent=[min_bin, max_bin, 0, len(timestamps)])
+    cax = ax.imshow(heatmap_data, aspect='auto', cmap='jet', origin='lower', extent=[min_bin, max_bin, timestamps[0], timestamps[-1]])
     ax.set_title('Raw Radar Data Heatmap')
     ax.set_xlabel('Slant Range (m)')
     ax.set_ylabel('Measurement Time (s)')
@@ -107,14 +107,14 @@ def plot_comparison_heatmaps(raw_data, processed_data, min_bin, max_bin):
     fig, axs = plt.subplots(1, 2, figsize=(24, 8))
 
     # Plot raw data heatmap
-    c1 = axs[0].imshow(raw_heatmap_data, aspect='auto', cmap='jet', origin='lower', extent=[min_bin, max_bin, 0, len(timestamps)])
+    c1 = axs[0].imshow(raw_heatmap_data, aspect='auto', cmap='jet', origin='lower', extent=[min_bin, max_bin, timestamps[0], timestamps[-1]])
     axs[0].set_title('Raw Radar Data')
     axs[0].set_xlabel('Slant Range (m)')
     axs[0].set_ylabel('Measurement Time (s)')
     fig.colorbar(c1, ax=axs[0], label='Signal Power Ratio (dBm)')
 
     # Plot processed data heatmap
-    c2 = axs[1].imshow(processed_heatmap_data, aspect='auto', cmap='jet', origin='lower', extent=[min_bin, max_bin, 0, len(timestamps)])
+    c2 = axs[1].imshow(processed_heatmap_data, aspect='auto', cmap='jet', origin='lower', extent=[min_bin, max_bin, timestamps[0], timestamps[-1]])
     axs[1].set_title('Processed Radar Data')
     axs[1].set_xlabel('Slant Range (m)')
     axs[1].set_ylabel('Measurement Time (s)')
@@ -128,6 +128,6 @@ if __name__ == "__main__":
     min_bin = 0
     max_bin = 2
     
-    plot_fd_range_bins_in_grid(raw_data, 0, 2)  # Adjust min_range_bin, max_rang_bin sizes
-    plot_heatmap(raw_data, 0, 2)
+    plot_fd_range_bins_in_grid(raw_data, 0, 3)  # Adjust min_range_bin, max_rang_bin sizes
+    plot_heatmap(raw_data, 0, 6)
     print("Finished plotting the data.")
