@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Run Radar_Communication_Example",
+            "name": "Python: Collect Radar Data",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Python38_Example_Codes/Radar_Communication_Example.py",
+            "program": "${workspaceFolder}/collect_data.py",
             "console": "integratedTerminal"
         },
         {

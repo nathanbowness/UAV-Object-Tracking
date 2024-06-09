@@ -1,0 +1,87 @@
+from RadarDevKit.RadarModule import RadarModule, GetRadarModule
+from RadarDevKit.ConfigClasses import SysParams
+from config import get_sys_params, get_ethernet_config
+import time
+
+import numpy as np
+import csv
+
+# Calculate the number of range bins the radar will return data for 
+# and the range they correspond to                
+def get_range_bins(radarModule: RadarModule):
+    return [radarModule.sysParams.tic*n/radarModule.sysParams.zero_pad/1.0e6 for n in range(radarModule.sysParams.freq_points)]
+
+# Get the FD data from the Radar
+def get_FD_data(radarModule: RadarModule):
+    # Process the FD data based on the data type
+    if radarModule.sysParams.FFT_data_type == 0:  # only magnitudes were transmitted
+        mag_data = radarModule.FD_Data.data
+    elif radarModule.sysParams.FFT_data_type == 2:  # real/imaginary 
+        comp_data = [complex(float(radarModule.FD_Data.data[n]), float(radarModule.FD_Data.data[n + 1])) for n in range(0, len(main.FD_Data.data), 2)]
+        mag_data = np.abs(comp_data)
+    elif radarModule.sysParams.FFT_data_type in [1, 3]:  # magnitudes/phase or magnitudes/object angle
+        mag_data = [radarModule.FD_Data.data[n] for n in range(0, len(radarModule.FD_Data.data), 2)]
+    
+    # Convert to dBm
+    min_dbm = -60  # [dBm]
+    for n in range(len(mag_data)):
+        try:
+            mag_data[n] = 20 * np.log10(mag_data[n] / 2.**21)
+        except:
+            mag_data[n] = min_dbm
+            
+    # Sort for active channels
+    fd_data = []
+    n = 0
+    for ch in range(4):  # maximum possible channels = 4
+        if radarModule.sysParams.active_RX_ch & (1 << ch):
+            ind1 = n * radarModule.FD_Data.nSamples
+            ind2 = ind1 + radarModule.FD_Data.nSamples
+            n += 1
+            fd_data.append(mag_data[ind1:ind2])
+        else:
+            fd_data.append([0] * radarModule.FD_Data.nSamples)
+            
+    return fd_data
+
+    
+# Colect FD data for a period of time, and write the results to a csv file
+def collect_save_freq_data(radarModule: RadarModule, 
+                           output_file: str = "samples.csv",
+                           measurementType: str = "UP-Ramp", 
+                           collectionDurationSec: int = 30):
+    if not radarModule.connected:
+        exit("Please connect radar module.")
+
+    print("Collecting Data...")
+    
+    with open(output_file, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+    
+        # Collect data for a period of time, and write results to a csv
+        start_time = time.time()
+        while time.time() - start_time < collectionDurationSec:
+            radarModule.GetFdData(measurementType)
+            timestamp = time.time() - start_time
+            
+            fd_data = get_FD_data(radarModule)
+                    
+            # Write data to a file
+            row = [timestamp] + [item for sublist in fd_data for item in sublist]
+            writer.writerow(row)
+    
+            # Store data by range bins in the corresponding channel dictionary
+            # for i, rb in enumerate(range_bins):
+            #     channels_fd_I1[rb].append(fd_data[0][i])
+            #     channels_fd_Q1[rb].append(fd_data[1][i])
+            #     channels_fd_I2[rb].append(fd_data[2][i])
+            #     channels_fd_Q2[rb].append(fd_data[3][i])
+    print("Finished collecting data, written to {}", output_file)
+
+
+# Collect data
+radarModule = GetRadarModule(updatedSysParams=get_sys_params(), 
+                             updatedEthernetConfig=get_ethernet_config())
+collect_save_freq_data(radarModule=radarModule, collectionDurationSec=5)
+
+
