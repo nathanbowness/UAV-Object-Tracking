@@ -1,16 +1,14 @@
 from plot_captured_radar_data import read_data_from_csv, plot_fd_range_bins_in_grid, plot_heatmap, plot_comparison_heatmaps
-from object_detection import caso_cfar, caso_cfar_absolute_value_comparison
+from object_detection import caso_cfar, detect_peaks, smooth_signal, detect_peaks, cfar_using_peak
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 def object_tracking_on_incoming_signal():
     return None
 
-def main():
-    raw_data = read_data_from_csv("samples.csv")
-    
-    gaurd_cells = 5
-    subgroup = 25
-    threshold_db = 15
-    threshold_linear = 15
+# Process the data across the time samples, looking at frequecy range across range bins
+def process_data_across_samples(raw_data, guard_cells, subgroup, threshold_factor, use_peak: bool =True):
     
     cfar_data = {}
 
@@ -27,15 +25,22 @@ def main():
             Q1_signal.append(raw_data[time_sample][range_bin][1])
             I2_signal.append(raw_data[time_sample][range_bin][2])
             Q2_signal.append(raw_data[time_sample][range_bin][3])
+            
+        I1_signal = np.array(I1_signal)
+        Q1_signal = np.array(Q1_signal)
+        I2_signal = np.array(I2_signal)
+        Q2_signal = np.array(Q2_signal)
         
-        # i1_output = caso_cfar(I1_signal, gaurd_cells, subgroup, threshold_db)
-        # q1_output = caso_cfar(Q1_signal, gaurd_cells, subgroup, threshold_db)
-        # i2_output = caso_cfar(I2_signal, gaurd_cells, subgroup, threshold_db)
-        # q2_output = caso_cfar(Q2_signal, gaurd_cells, subgroup, threshold_db)
-        i1_output = caso_cfar_absolute_value_comparison(I1_signal, gaurd_cells, subgroup, threshold_linear)
-        q1_output = caso_cfar_absolute_value_comparison(Q1_signal, gaurd_cells, subgroup, threshold_linear)
-        i2_output = caso_cfar_absolute_value_comparison(I2_signal, gaurd_cells, subgroup, threshold_linear)
-        q2_output = caso_cfar_absolute_value_comparison(Q2_signal, gaurd_cells, subgroup, threshold_linear)
+        if use_peak:
+            i1_output = cfar_using_peak(I1_signal, guard_cells, subgroup, threshold_factor)
+            q1_output = cfar_using_peak(Q1_signal, guard_cells, subgroup, threshold_factor)
+            i2_output = cfar_using_peak(I2_signal, guard_cells, subgroup, threshold_factor)
+            q2_output = cfar_using_peak(Q2_signal, guard_cells, subgroup, threshold_factor)
+        else:
+            i1_output = caso_cfar(I1_signal, guard_cells, subgroup, threshold_factor, False)
+            q1_output = caso_cfar(Q1_signal, guard_cells, subgroup, threshold_factor, False)
+            i2_output = caso_cfar(I2_signal, guard_cells, subgroup, threshold_factor, False)
+            q2_output = caso_cfar(Q2_signal, guard_cells, subgroup, threshold_factor, False)
         
         if time_sample not in cfar_data:
             cfar_data[time_sample] = {}
@@ -47,12 +52,56 @@ def main():
                 i2_output[idx], 
                 q2_output[idx]
             ]
+    return cfar_data
+
+def process_data_across_bins(raw_data, guard_cells, subgroup, threshold_factor, use_peak: bool =True):
+    
+    cfar_data = {}
+
+    # Get all range bins
+    first_timestamp = next(iter(raw_data))
+    range_bins = sorted(raw_data[first_timestamp].keys())
+
+    for range_bin in range_bins:
+        signal_over_time = []
+
+        for time_sample in sorted(raw_data.keys()):
+            if range_bin in raw_data[time_sample]:
+                signal_over_time.append(raw_data[time_sample][range_bin][0])  # Use I1 signal for example
+
+        signal_over_time = np.array(signal_over_time)
+        
+        if use_peak:
+            signal_over_time = smooth_signal(signal_over_time, 2)
+            cfar_output = cfar_using_peak(signal_over_time, guard_cells, subgroup, threshold_factor)
+        else:
+            cfar_output = caso_cfar(signal_over_time, guard_cells, subgroup, threshold_factor, False)
+        
+        for idx, time_sample in enumerate(sorted(raw_data.keys())):
+            if time_sample not in cfar_data:
+                cfar_data[time_sample] = {}
+            cfar_data[time_sample][range_bin] = [cfar_output[idx]]
             
-    # Plot the CFAR results
-    # plot_fd_range_bins_in_grid(cfar_data, 0, 2)  # Adjust min_bin and max_bin as needed
+    return cfar_data
+
+def main():
+    raw_data = read_data_from_csv("samples.csv")
+    
+    # Using peak
+    # guard_cells = 5
+    # subgroup = 20
+    # threshold_factor = 1.4
+    
+    # Using case
+    guard_cells = 5
+    subgroup = 20
+    threshold_factor = 10
+    
+    # cfar_data = process_data_across_samples(raw_data, guard_cells, subgroup, threshold_factor)
+    cfar_data = process_data_across_bins(raw_data, guard_cells, subgroup, threshold_factor)
     
     # plot_heatmap(raw_data, 0, 100)
-    plot_comparison_heatmaps(raw_data, cfar_data, 0, 5)
+    plot_comparison_heatmaps(raw_data, cfar_data, 0, 10)
 
     print("test")
 

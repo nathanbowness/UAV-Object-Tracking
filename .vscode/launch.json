@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Main",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Collect Radar Data",
             "type": "debugpy",
             "request": "launch",
@@ -15,7 +22,7 @@
             "name": "Python: Radar Plot Data",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/radar_object_detection.py",
+            "program": "${workspaceFolder}/plot_captured_radar_data.py",
             "console": "integratedTerminal"
         },
         {
