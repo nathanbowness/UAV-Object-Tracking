@@ -1,3 +1,5 @@
+from constants import SAVED_CSV_FILE_NAME
+
 import matplotlib.pyplot as plt
 import csv
 import numpy as np
@@ -83,7 +85,8 @@ def prepare_heatmap_data(data, min_bin, max_bin):
     for t_idx, timestamp in enumerate(timestamps):
         for r_idx, range_bin in enumerate(selected_bins):
             if range_bin in data[timestamp]:
-                heatmap_data[t_idx, r_idx] = data[timestamp][range_bin][0]  # Use I1 signal for example
+                # heatmap_data[t_idx, r_idx] = data[timestamp][range_bin][0]  # Use I1 signal for example
+                heatmap_data[t_idx, r_idx] = max(data[timestamp][range_bin][0], data[timestamp][range_bin][1], data[timestamp][range_bin][2], data[timestamp][range_bin][3])  # Max of all datapoints
     
     return heatmap_data, timestamps, selected_bins
 
@@ -124,7 +127,7 @@ def plot_comparison_heatmaps(raw_data, processed_data, min_bin, max_bin):
     plt.show()
     
 if __name__ == "__main__":
-    raw_data = read_data_from_csv('samples.csv')
+    raw_data = read_data_from_csv(SAVED_CSV_FILE_NAME)
     min_bin = 0
     max_bin = 2
     

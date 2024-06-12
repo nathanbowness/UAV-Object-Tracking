@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def smooth_signal(x, window_size):
     """
@@ -37,12 +38,35 @@ def detect_peaks(x, num_train, num_guard, rate_fa):
 
     return np.array(peak_at, dtype=int)
 
-def cfar_using_peak(input_signal, num_guard_cells, num_training_cells, rate_fa, show_caso=False):
+def detect_peaks_faster(x, num_train, num_guard, rate_fa):
+    num_cells = x.size
+    num_train_half = num_train // 2
+    num_guard_half = num_guard // 2
+    num_side = num_train_half + num_guard_half
+
+    alpha = num_train * (rate_fa ** (-1 / num_train) - 1)  # threshold factor
+
+    peak_at = []
+
+    # Use a rolling window to calculate the noise level for each cell
+    training_cells = np.array([np.concatenate((x[max(0, i - num_side):max(0, i - num_guard_half)], x[min(num_cells, i + num_guard_half + 1):min(num_cells, i + num_side + 1)])) for i in range(num_side, num_cells - num_side)])
+    
+    p_noise = np.mean(training_cells, axis=1)
+    thresholds = alpha * p_noise
+
+    # Detect peaks considering positive deviations
+    for i in range(num_side, num_cells - num_side):
+        if x[i] > p_noise[i - num_side] + thresholds[i - num_side]:
+            peak_at.append(i)
+
+    return np.array(peak_at, dtype=int)
+
+def cfar_using_peak(input_signal, num_guard_cells, num_training_cells, rate_fa, show_caso=False, plot_graph=True):
     num_cells = len(input_signal)
     output_signal = np.zeros_like(input_signal)
 
     # Detect peaks using the provided method
-    peak_indices = detect_peaks(input_signal, num_training_cells, num_guard_cells, rate_fa)
+    peak_indices = detect_peaks_faster(input_signal, num_training_cells, num_guard_cells, rate_fa)
     
     for i in range(num_cells):
         if i in peak_indices:
@@ -59,6 +83,21 @@ def cfar_using_peak(input_signal, num_guard_cells, num_training_cells, rate_fa, 
                 output_signal[i] = smallest_mean
             else:
                 output_signal[i] = -50
+                
+    if plot_graph:
+        plt.figure(figsize=(10, 6))
+        plt.plot(input_signal, label='Input Signal')
+        
+        # Plot only the valid detections as 'x' markers
+        valid_detections = [i for i in range(num_cells) if output_signal[i] > -50]
+        plt.scatter(valid_detections, [output_signal[i] for i in valid_detections], color='red', marker='x', label='Detections')
+
+        plt.title('Input Signal For Range Bin vs Detections')
+        plt.xlabel('Sample Index')
+        plt.ylabel('Signal Power Ratio (dBm)')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
 
     return output_signal
 

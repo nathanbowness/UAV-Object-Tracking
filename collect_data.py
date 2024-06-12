@@ -1,6 +1,7 @@
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from RadarDevKit.ConfigClasses import SysParams
 from config import get_sys_params, get_ethernet_config
+from constants import SAVED_CSV_FILE_NAME
 import time
 
 import numpy as np
@@ -49,7 +50,7 @@ def get_FD_data(radarModule: RadarModule):
 def collect_save_freq_data(radarModule: RadarModule, 
                            output_file: str = "samples.csv",
                            measurementType: str = "UP-Ramp", 
-                           collectionDurationSec: int = 30):
+                           collectionDurationSec: int = 45):
     if not radarModule.connected:
         exit("Please connect radar module.")
 
@@ -75,19 +76,16 @@ def collect_save_freq_data(radarModule: RadarModule,
                     row.append(fd_data[ch][rb_index])
                 writer.writerow(row)
     
-            # Store data by range bins in the corresponding channel dictionary
-            # for i, rb in enumerate(range_bins):
-            #     channels_fd_I1[rb].append(fd_data[0][i])
-            #     channels_fd_Q1[rb].append(fd_data[1][i])
-            #     channels_fd_I2[rb].append(fd_data[2][i])
-            #     channels_fd_Q2[rb].append(fd_data[3][i])
     print("Finished collecting data, written to {}", output_file)
 
 
-# Collect data
-radarModule = GetRadarModule(updatedSysParams=get_sys_params(), 
-                             updatedEthernetConfig=get_ethernet_config())
-# radarModule = GetRadarModule(updatedEthernetConfig=get_ethernet_config())
-collect_save_freq_data(radarModule=radarModule, collectionDurationSec=30)
+def collect_data():
+    # Collect data
+    radarModule = GetRadarModule(updatedSysParams=get_sys_params(), 
+                                updatedEthernetConfig=get_ethernet_config())
+    # radarModule = GetRadarModule(updatedEthernetConfig=get_ethernet_config())
+    collect_save_freq_data(radarModule=radarModule, output_file=SAVED_CSV_FILE_NAME, collectionDurationSec=30)
 
 
+if __name__ == "__main__":
+    collect_data()
