@@ -154,4 +154,5 @@ ani = FuncAnimation(fig, update, frames=np.arange(100), init_func=init, blit=Tru
 plt.show()
 
 if __name__ == "__main__":
+    print("Starting the Joint Probabilistic Data Association (JPDA) Tracker")
     main_loop()
