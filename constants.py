@@ -7,7 +7,7 @@
 # SAVED_CSV_FILE_NAME = "street_car_4cars_break_1car_at_end.csv"
 
 # 2 cars, somewhat evenly spaced moving slowly
-SAVED_CSV_FILE_NAME = "street_car_2_cars_evenly_spaced.csv"
+# SAVED_CSV_FILE_NAME = "street_car_2_cars_evenly_spaced.csv"
 
 # 1 car passing by quickly
 # SAVED_CSV_FILE_NAME = "street_car_1_quickly_passing.csv"
@@ -19,3 +19,5 @@ SAVED_CSV_FILE_NAME = "street_car_2_cars_evenly_spaced.csv"
 
 #3 cars swooping by nicely - good results, no people walking by in the background
 # SAVED_CSV_FILE_NAME = "street_cars_3driving_byhouse_diagonal.csv"
+
+SAVED_CSV_FILE_NAME = " new_sample.csv"

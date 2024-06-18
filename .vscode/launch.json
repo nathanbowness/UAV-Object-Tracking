@@ -12,6 +12,13 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python: Tracking 1",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tracking_test.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Collect Radar Data",
             "type": "debugpy",
             "request": "launch",
