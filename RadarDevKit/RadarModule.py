@@ -262,7 +262,7 @@ Get a configured RadarModule, with functions to retreive data
 newSysParms: update system params to be used with the radar to get data
 printSettings: if true, will print the updated settings the user has set to the console, otherwise it will not print anything
 '''        
-def GetRadarModule(updatedSysParams: SysParams = None, 
+def GetRadarModule(updatedRadarParams: SysParams = None, 
                    updatedEthernetConfig: EthernetParams = None, 
                    printSettings: bool = True):
                     
@@ -294,13 +294,13 @@ def GetRadarModule(updatedSysParams: SysParams = None,
     #     print("")
     
     # Change system params if specified, otherwise use defaults
-    if updatedSysParams is not None:
-        radarModule.sysParams.minFreq = updatedSysParams.minFreq
-        radarModule.sysParams.manualBW = updatedSysParams.manualBW
-        radarModule.sysParams.t_ramp = updatedSysParams.t_ramp
-        radarModule.sysParams.active_RX_ch = updatedSysParams.active_RX_ch
-        radarModule.sysParams.freq_points = updatedSysParams.freq_points
-        radarModule.sysParams.FFT_data_type = updatedSysParams.FFT_data_type
+    if updatedRadarParams is not None:
+        radarModule.sysParams.minFreq = updatedRadarParams.minFreq
+        radarModule.sysParams.manualBW = updatedRadarParams.manualBW
+        radarModule.sysParams.t_ramp = updatedRadarParams.t_ramp
+        radarModule.sysParams.active_RX_ch = updatedRadarParams.active_RX_ch
+        radarModule.sysParams.freq_points = updatedRadarParams.freq_points
+        radarModule.sysParams.FFT_data_type = updatedRadarParams.FFT_data_type
         
     
     # Check if the frontend is off

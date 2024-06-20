@@ -1,6 +1,6 @@
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from RadarDevKit.ConfigClasses import SysParams
-from config import get_sys_params, get_ethernet_config
+from config import get_radar_params, get_ethernet_config
 from constants import SAVED_CSV_FILE_NAME
 import time
 
@@ -81,7 +81,7 @@ def collect_save_freq_data(radarModule: RadarModule,
 
 def collect_data():
     # Collect data
-    radarModule = GetRadarModule(updatedSysParams=get_sys_params(), 
+    radarModule = GetRadarModule(updatedRadarParams=get_radar_params(), 
                                 updatedEthernetConfig=get_ethernet_config())
     # radarModule = GetRadarModule(updatedEthernetConfig=get_ethernet_config())
     collect_save_freq_data(radarModule=radarModule, output_file=SAVED_CSV_FILE_NAME, collectionDurationSec=30)
