@@ -47,7 +47,8 @@ def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
 
 if __name__ == "__main__":
     run_params = get_run_params()
-    radar_data_window = RadarDataWindow(run_params.cfar_params.num_train, run_params.cfar_params.num_guard, 30)
+    radar_data_window = RadarDataWindow(cfar_params=run_params.cfar_params,
+                                        duration_seconds=30)
     
     data_processing(run_params, radar_data_window)
     print("test")

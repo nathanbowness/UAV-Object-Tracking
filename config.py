@@ -1,14 +1,16 @@
 from RadarDevKit.ConfigClasses import SysParams
 from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
+from cfar import CfarType
 from resources.FDDataMatrix import FDSignalType
 from resources.RunType import RunType, RunDataFormat
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 
 class CFARParams():    
-    def __init__(self, guard_cell: int = 5, subgroup: int = 10, threshold: float = 10):
+    def __init__(self, num_guard: int = 3, num_train: int = 10, threshold: float = 5.0):
         # CasoCFAR Params
-        self.num_guard = guard_cell
-        self.num_train = subgroup
+        self.cfar_type = CfarType.LEADING_EDGE
+        self.num_guard = num_guard
+        self.num_train = num_train
         self.threshold = threshold
         
 class RunParams():

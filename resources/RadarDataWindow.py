@@ -1,8 +1,9 @@
 from collections import deque
+from cfar import CfarType, cfar_single, cfar_required_cells
 from resources.FDDataMatrix import FDDataMatrix, FDSignalType
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from get_all_sensor_data import get_fd_data_from_radar
-from config import RunParams
+from config import RunParams, CFARParams
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -19,15 +20,15 @@ class StoredData():
 
 class RadarDataWindow():
 
-    def __init__(self, num_train, num_guard, duration_seconds=None):
+    def __init__(self, cfar_params=CFARParams, duration_seconds=None):
         self.deque = deque()
         self.creation_time = pd.Timestamp.now() 
         self.duration = timedelta(seconds=duration_seconds) if duration_seconds else None
-        self.capacity = (2*num_guard) + (2*num_train) + 1
         
-        self.last_cfar_index = -1  # Tracks where the last CFAR calculation ended
-        self.num_train = num_train
-        self.num_guard = num_guard
+        # Cfar params
+        self.cfar_params = cfar_params
+        self.index_to_eval = cfar_params.num_train + cfar_params.num_guard
+        self.required_cells_cfar = cfar_required_cells(cfar_params.num_train, cfar_params.num_guard, cfar_type=cfar_params.cfar_type)
 
     def add_record(self, record : FDDataMatrix):
         """
@@ -53,7 +54,7 @@ class RadarDataWindow():
         return self.deque
     
     def process_new_data(self, timeStamp: pd.Timestamp) -> FDDetectionMatrix:
-        if len(self.deque) < self.capacity:
+        if len(self.deque) < self.required_cells_cfar:
             # Not enough data to run CFAR
             return FDDetectionMatrix(np.zeros((512, 8)), timeStamp)
 
@@ -61,61 +62,19 @@ class RadarDataWindow():
         signals = [FDSignalType.I1, FDSignalType.Q1, FDSignalType.I2, FDSignalType.Q2]
         detection_matrix = np.zeros((num_bins, 8))
         
-        relevate_deque_data = list(self.deque)[-self.capacity:]
-        
-        index_to_eval = self.num_train + self.num_guard  # Index of the CUT in the deque after sufficient data is gathered
+        relevate_deque_data = list(self.deque)[-self.required_cells_cfar:]
 
         for i in range(num_bins):  # Each range bin
             for idx, signal in enumerate(signals):
                 data = np.array([item.raw_data.fd_data[i][signal.value] for item in relevate_deque_data])
-                detection_matrix[i, idx*2], detection_matrix[i, idx*2+1] = self.caso_cfar_single(data, self.num_train, self.num_guard, index_to_eval)
+                detection_matrix[i, idx*2], detection_matrix[i, idx*2+1] = cfar_single(data, 
+                                                                                       self.cfar_params.num_train, 
+                                                                                       self.cfar_params.num_guard, 
+                                                                                       index_CUT=self.index_to_eval, 
+                                                                                       threshold=self.cfar_params.threshold,
+                                                                                       cfar_type=self.cfar_params.cfar_type)
 
         return FDDetectionMatrix(detection_matrix, timeStamp)
-    
-    def caso_cfar_single(self, data, num_train, num_guard, index_CUT):
-        n = len(data)
-    
-        # Ensure the index has enough data around it to calculate
-        if index_CUT < num_train + num_guard or index_CUT >= n - num_train - num_guard:
-            return 0, 0  # Not enough data to perform CFAR at this index
-
-        # Extract training cells around the CUT, excluding guard cells
-        leading_train_cells = data[index_CUT - num_train - num_guard:index_CUT - num_guard]
-        trailing_train_cells = data[index_CUT + num_guard + 1:index_CUT + num_guard + num_train + 1]
-
-        # Calculate the average noise levels for leading and trailing training cells
-        noise_level_leading = np.mean(leading_train_cells)
-        noise_level_trailing = np.mean(trailing_train_cells)
-
-        # Use the smaller of the two noise levels
-        noise_level = min(noise_level_leading, noise_level_trailing)
-
-        # Define the threshold
-        threshold_factor = 1.4  # Adjustable based on required false alarm rates
-        threshold = noise_level * threshold_factor
-
-        # Determine if the CUT exceeds the threshold
-        signal_level = data[index_CUT]
-        detection = 1 if signal_level > threshold else 0
-
-        return detection, threshold
-
-    def caso_cfar_single_old(self, data, num_train, num_guard, index_CUT):
-        # Check the CFAR condition for a single data point at 'index'
-        if len(data) >= 2 * (num_train + num_guard) + 1:
-            # Extract training data excluding guard cells and CUT
-            train_data = np.concatenate([
-                data[index_CUT - num_train - num_guard : index_CUT - num_guard],
-                data[index_CUT + num_guard + 1 : index_CUT + num_guard + num_train + 1]
-            ])
-            noise_level = np.mean(train_data)
-            threshold = noise_level * 1.2  # Adjust factor based on desired false alarm rate
-            
-            signal_level = data[index_CUT]
-            detection_status = 1 if signal_level > threshold else 0
-            return detection_status, threshold
-        else:
-            return 0, 0  # Return zero detection and threshold if insufficient data
     
     def get_signal_for_bin(self, bin_index, signalType: FDSignalType):
         """
