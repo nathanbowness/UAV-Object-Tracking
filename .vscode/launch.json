@@ -5,17 +5,26 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Get All Sensor Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/get_all_sensor_data.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Radar Processing",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/new_data_processing.py",
+            "console": "integratedTerminal"
+        },
+
+
+        {
             "name": "Python: Main",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: All Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/collect_all_sensor_data.py",
             "console": "integratedTerminal"
         },
         {

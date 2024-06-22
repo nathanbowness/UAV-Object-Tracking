@@ -78,14 +78,12 @@ def collect_save_freq_data(radarModule: RadarModule,
     
     print("Finished collecting data, written to {}", output_file)
 
-
 def collect_data():
     # Collect data
     radarModule = GetRadarModule(updatedRadarParams=get_radar_params(), 
                                 updatedEthernetConfig=get_ethernet_config())
     # radarModule = GetRadarModule(updatedEthernetConfig=get_ethernet_config())
     collect_save_freq_data(radarModule=radarModule, output_file=SAVED_CSV_FILE_NAME, collectionDurationSec=30)
-
 
 if __name__ == "__main__":
     collect_data()

@@ -1,15 +1,41 @@
+from resources.FDDataMatrix import FDDataMatrix
 from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from RadarDevKit.ConfigClasses import SysParams
 from config import get_radar_params, get_ethernet_config, get_run_params
 from config import RunParams
-
 from constants import SPEED_LIGHT, DIST_BETWEEN_ANTENNAS
+from resources.RunType import RunType
 
 import numpy as np
+    
+def calculate_phase_data_and_view_angle(fc, raw_phase_data_iq25):
+    
+    max_iq25 = 2**25
+    phase_data_radians = (raw_phase_data_iq25 / (max_iq25))
+    
+    iq_data = np.array(phase_data_radians).reshape(-1, 4)  # Reshape into Nx4 where each row is [I1, Q1, I2, Q2]
+
+    I1_phase = iq_data[:, 0]
+    Q1_phase = iq_data[:, 1]
+    I2_phase = iq_data[:, 2]
+    Q2_phase = iq_data[:, 3]
+    
+    # If phase data needs to be calculated from I and Q (uncomment if needed)
+    phase1 = np.arctan(Q1_phase / I1_phase)
+    phase2 = np.arctan(Q2_phase / I2_phase)
+    # phase1 = np.arctan2(Q1, I1) ? This is old - remove it eventually
+    phase_differences = phase2 - phase1  
+
+    # Calculate the view angle
+    alpha = np.arcsin((phase_differences * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS))
+    alpha_degrees = np.degrees(alpha)  # Convert from radians to degrees
+    
+    # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Estimated View Angle [Deg]] (512x3)
+    return np.hstack((phase1, phase2, alpha_degrees))
 
 # Get the FD data from the Radar
-def get_FD_data(radarModule: RadarModule, radarParams: SysParams):
+def get_FD_data(radarModule: RadarModule, radarParams: SysParams) -> FDDataMatrix:
     
     fc = (radarParams.minFreq*(10**6)) + (radarParams.manualBW / 2)*(10**6) # Central frequency in Hz - Conversion from Mhz to Hz
     
@@ -33,33 +59,10 @@ def get_FD_data(radarModule: RadarModule, radarParams: SysParams):
         # Central frequency to go from phase to angles
         fd_data = radarModule.FD_Data.data
         mag_data = [fd_data[n] for n in range(0, len(fd_data), 2)]
+        raw_phase_data_iq25 = np.array([fd_data[n] for n in range(1, len(fd_data), 2)])
         
-        phase_data_iq25 = np.array([fd_data[n] for n in range(1, len(fd_data), 2)])
-        
-        max_iq25 = 2**25
-        phase_data_radians = phase_data_iq25
-        phase_data_radians = (phase_data_iq25 / (max_iq25))
-        # phase_data_radians = ((phase_data_iq25 * 180) / ((max_iq25)*np.pi))
-        
-        iq_data = np.array(phase_data_radians).reshape(-1, 4)  # Reshape into Nx4 where each row is [I1, Q1, I2, Q2]
-
-        I1_phase = iq_data[:, 0]
-        Q1_phase = iq_data[:, 1]
-        I2_phase = iq_data[:, 2]
-        Q2_phase = iq_data[:, 3]
-        
-        # If phase data needs to be calculated from I and Q (uncomment if needed)
-        phase1 = np.arctan(Q1_phase / I1_phase)
-        phase2 = np.arctan(Q2_phase / I2_phase)
-        # phase1 = np.arctan2(Q1, I1) ? This is old - remove it eventually
-        phase_differences = phase2 - phase1  
-
-        # Calculate the view angle
-        alpha = np.arcsin((phase_differences * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS))
-        alpha_degrees = np.degrees(alpha)  # Convert from radians to degrees
-        
-        # An array of measured data - [Rx1 Phase, Rx2 Phase, Estimated View Angle] (512x3)
-        phase_data = np.hstack((phase1, phase2, alpha_degrees))
+        # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Estimated View Angle [Deg]] (512x3)
+        phase_data = calculate_phase_data_and_view_angle(fc, raw_phase_data_iq25)
     
     # Convert to dBm
     min_dbm = -60  # [dBm]
@@ -70,14 +73,20 @@ def get_FD_data(radarModule: RadarModule, radarParams: SysParams):
         except:
             mag_data[n] = min_dbm
     
-    # Create the matrix of measured data - [512, 7] => [I1, Q1, I2, Q2, Rx1 Phase, Rx2 Phase, Estimated View Angle]
-    return np.hstack((mag_data, phase_data))
+    # Create the FDDataMatrix of measured data with a timestamp - [512, 7] => [I1, Q1, I2, Q2, Rx1 Phase, Rx2 Phase, Estimated View Angle]
+    return FDDataMatrix(np.hstack((mag_data, phase_data)))
 
-def get_fd_data_from_radar(run_params: RunParams, radar_sys_params: SysParams, ether_params: EthernetParams):
+def get_fd_data_from_radar(run_params: RunParams, radar_sys_params: SysParams, ether_params: EthernetParams) -> FDDataMatrix:
     # Collect data
     radarModule = GetRadarModule(updatedRadarParams=radar_sys_params,
                                 updatedEthernetConfig=ether_params)
     radarModule.GetFdData(run_params.ramp_type)
+    fd_data = get_FD_data(radarModule, radarParams=radar_sys_params)
+    
+    # Print the FD data
+    if run_params.runType == RunType.LIVE_RECORD:
+        fd_data.print_data_to_file(run_params.recordedDataFolder)
+    
     return get_FD_data(radarModule, radarParams=radar_sys_params)
 
 if __name__ == "__main__":  
