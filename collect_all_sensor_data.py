@@ -1,12 +1,18 @@
+from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from RadarDevKit.ConfigClasses import SysParams
 from config import get_radar_params, get_ethernet_config, get_run_params
 from config import RunParams
 
+from constants import SPEED_LIGHT, DIST_BETWEEN_ANTENNAS
+
 import numpy as np
 
 # Get the FD data from the Radar
 def get_FD_data(radarModule: RadarModule, radarParams: SysParams):
+    
+    fc = (radarParams.minFreq*(10**6)) + (radarParams.manualBW / 2)*(10**6) # Central frequency in Hz - Conversion from Mhz to Hz
+    
     # Process the FD data based on the data type
     if radarModule.sysParams.FFT_data_type == 0:  # only magnitudes were transmitted
         fd_data = radarModule.FD_Data.data
@@ -18,57 +24,42 @@ def get_FD_data(radarModule: RadarModule, radarParams: SysParams):
         fd_data = radarModule.FD_Data.data      
         mag_data = [fd_data[n] for n in range(0, len(fd_data), 2)]
         angle_data_iq25 = np.array([fd_data[n] for n in range(1, len(fd_data), 2)])
-        # The IQ25 refers to a specific precision that is kept and used for the RADIAN phase/angle representation of the data
+        
+        # The IQ25 refers to a specific precision that is kept and used for the RADIAN angle representation of the data
         # The explicit conversion below is given in the appendix
         angle_data_deg = angle_data_iq25 * (180 / (2**25 * np.pi))
         
     elif radarModule.sysParams.FFT_data_type == 1: # magnitudes/phase [I1, I1 Phase, Q1, Q1 Phase, I2, I2 Phase, ...]
-        
-        fc = 24350e6  # Central frequency in Hz
-        b = 0.2       # Distance between antennas in meters
-        c0 = 299792458  # Speed of light in m/s
-        
         # Central frequency to go from phase to angles
-        f_central = radarParams.manualBW / 2
         fd_data = radarModule.FD_Data.data
         mag_data = [fd_data[n] for n in range(0, len(fd_data), 2)]
         
         phase_data_iq25 = np.array([fd_data[n] for n in range(1, len(fd_data), 2)])
         
-        # Convert IQ25 format phase data to normal radians (not in IQ25 representation values)
         max_iq25 = 2**25
+        phase_data_radians = phase_data_iq25
         phase_data_radians = (phase_data_iq25 / (max_iq25))
-        # Reshape the array to separate I and Q pairs
-        phase_pairs  = phase_data_radians.reshape(-1, 2) # Reshape into Nx2 where each row is [I, Q]
+        # phase_data_radians = ((phase_data_iq25 * 180) / ((max_iq25)*np.pi))
         
-        # # Calculate phase differences assuming Rx1, Rx2 alternation
-        # phase_differences = phase_pairs[:, 1] - phase_pairs[:, 0]
-        
-        # alpha = np.arcsin((phase_differences * c0) / (2 * np.pi * fc * b))
-        # alpha_degrees = np.degrees(alpha)
-        
-        
-        # Calculate phases for each pair using arctan2, iterating over pairs
-        phases = np.arctan2(phase_pairs[:, 1], phase_pairs[:, 0])
+        iq_data = np.array(phase_data_radians).reshape(-1, 4)  # Reshape into Nx4 where each row is [I1, Q1, I2, Q2]
 
-        # Assuming phases are alternately from Rx1 and Rx2:
-        # phases[0], phases[2], phases[4], ... are from Rx1
-        # phases[1], phases[3], phases[5], ... are from Rx2
-        phase_rx1 = phases[0::2]  # Phases from Rx1
-        phase_rx2 = phases[1::2]  # Phases from Rx2
+        I1_phase = iq_data[:, 0]
+        Q1_phase = iq_data[:, 1]
+        I2_phase = iq_data[:, 2]
+        Q2_phase = iq_data[:, 3]
+        
+        # If phase data needs to be calculated from I and Q (uncomment if needed)
+        phase1 = np.arctan(Q1_phase / I1_phase)
+        phase2 = np.arctan(Q2_phase / I2_phase)
+        # phase1 = np.arctan2(Q1, I1) ? This is old - remove it eventually
+        phase_differences = phase2 - phase1  
 
-        # Calculate phase differences
-        phase_differences = phase_rx2 - phase_rx1
-
-        # Calculate the angle of arrival alpha
-        alpha = np.arcsin((phase_differences * c0) / (2 * np.pi * fc * b))
+        # Calculate the view angle
+        alpha = np.arcsin((phase_differences * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS))
         alpha_degrees = np.degrees(alpha)  # Convert from radians to degrees
         
-        # Compute the angle in radians for each I, Q pair
-        # angles_radians = np.arctan2(phase_data_iq25_reshape[:, 1], phase_data_iq25_reshape[:, 0])
-        # angles_second = np.degrees(angles_radians)
-        # phase_data_deg = angles_radians * (180 / (2**25 * np.pi))
-        print("test")
+        # An array of measured data - [Rx1 Phase, Rx2 Phase, Estimated View Angle] (512x3)
+        phase_data = np.hstack((phase1, phase2, alpha_degrees))
     
     # Convert to dBm
     min_dbm = -60  # [dBm]
@@ -79,28 +70,16 @@ def get_FD_data(radarModule: RadarModule, radarParams: SysParams):
         except:
             mag_data[n] = min_dbm
     
-    # Sort for active channels
-    fd_data = []
-    n = 0
-    for ch in range(4):  # maximum possible channels = 4
-        if radarModule.sysParams.active_RX_ch & (1 << ch):
-            ind1 = n * radarModule.FD_Data.nSamples
-            ind2 = ind1 + radarModule.FD_Data.nSamples
-            n += 1
-            fd_data.append(mag_data[ind1:ind2])
-        else:
-            fd_data.append([0] * radarModule.FD_Data.nSamples)
-            
-    return fd_data
+    # Create the matrix of measured data - [512, 7] => [I1, Q1, I2, Q2, Rx1 Phase, Rx2 Phase, Estimated View Angle]
+    return np.hstack((mag_data, phase_data))
 
-def collect_data(run_params: RunParams):
+def get_fd_data_from_radar(run_params: RunParams, radar_sys_params: SysParams, ether_params: EthernetParams):
     # Collect data
-    radar_params = get_radar_params()
-    radarModule = GetRadarModule(updatedRadarParams=radar_params,
-                                updatedEthernetConfig=get_ethernet_config())
-    
+    radarModule = GetRadarModule(updatedRadarParams=radar_sys_params,
+                                updatedEthernetConfig=ether_params)
     radarModule.GetFdData(run_params.ramp_type)
-    return get_FD_data(radarModule, radarParams=radar_params)
+    return get_FD_data(radarModule, radarParams=radar_sys_params)
 
 if __name__ == "__main__":  
-    collect_data(get_run_params())
+    test = get_fd_data_from_radar(get_run_params(), get_radar_params, get_ethernet_config())
+    print("test")

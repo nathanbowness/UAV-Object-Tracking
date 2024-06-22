@@ -29,7 +29,7 @@ def get_radar_params():
     updatedSysParams.t_ramp = 7
     updatedSysParams.active_RX_ch = 15
     updatedSysParams.freq_points = 512
-    updatedSysParams.FFT_data_type = 3
+    updatedSysParams.FFT_data_type = 1
     
     return updatedSysParams
 
