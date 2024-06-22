@@ -31,8 +31,8 @@ def calculate_phase_data_and_view_angle(fc, raw_phase_data_iq25):
     alpha = np.arcsin((phase_differences * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS))
     alpha_degrees = np.degrees(alpha)  # Convert from radians to degrees
     
-    # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Estimated View Angle [Deg]] (512x3)
-    return np.hstack((phase1, phase2, alpha_degrees))
+    # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Estimated View Angle [Deg]] (512 x 3)
+    return np.vstack((phase1, phase2, alpha_degrees)).T
 
 # Get the FD data from the Radar
 def get_FD_data(radarModule: RadarModule, radarParams: SysParams) -> FDDataMatrix:
@@ -73,22 +73,24 @@ def get_FD_data(radarModule: RadarModule, radarParams: SysParams) -> FDDataMatri
         except:
             mag_data[n] = min_dbm
     
+    mag_data = np.array(mag_data)
+    
     # Create the FDDataMatrix of measured data with a timestamp - [512, 7] => [I1, Q1, I2, Q2, Rx1 Phase, Rx2 Phase, Estimated View Angle]
-    return FDDataMatrix(np.hstack((mag_data, phase_data)))
+    return FDDataMatrix(np.hstack((mag_data.reshape(-1, 4), phase_data)))
 
-def get_fd_data_from_radar(run_params: RunParams, radar_sys_params: SysParams, ether_params: EthernetParams) -> FDDataMatrix:
+def get_fd_data_from_radar(run_params: RunParams, 
+                           radar_module: RadarModule,
+                           radar_sys_params: SysParams = get_radar_params()) -> FDDataMatrix:
     # Collect data
-    radarModule = GetRadarModule(updatedRadarParams=radar_sys_params,
-                                updatedEthernetConfig=ether_params)
-    radarModule.GetFdData(run_params.ramp_type)
-    fd_data = get_FD_data(radarModule, radarParams=radar_sys_params)
+    radar_module.GetFdData(run_params.ramp_type)
+    fd_data = get_FD_data(radar_module, radarParams=radar_sys_params)
     
     # Print the FD data
     if run_params.runType == RunType.LIVE_RECORD:
         fd_data.print_data_to_file(run_params.recordedDataFolder)
     
-    return get_FD_data(radarModule, radarParams=radar_sys_params)
+    return get_FD_data(radar_module, radarParams=radar_sys_params)
 
 if __name__ == "__main__":  
-    test = get_fd_data_from_radar(get_run_params(), get_radar_params, get_ethernet_config())
+    test = get_fd_data_from_radar(get_run_params())
     print("test")

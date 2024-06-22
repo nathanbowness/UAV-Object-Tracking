@@ -1,6 +1,7 @@
 from RadarDevKit.ConfigClasses import SysParams
 from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
 from resources.RunType import RunType, RunDataFormat
+from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 
 class CFARParams():    
     def __init__(self, guard_cell: int = 5, subgroup: int = 10, threshold: float = 10):
@@ -13,8 +14,11 @@ class RunParams():
     def __init__(self, cfar_params: CFARParams):
         # Settings to let the program run from recorded data should be recorded, or read from a preexisting location
         self.recordedDataFolder= "test_data"
-        self.runType = RunType.LIVE_RECORD
+        self.runType = RunType.LIVE
         self.recordedDataFormat = RunDataFormat.FD_CUSTOM
+        
+        if (self.runType == RunType.LIVE_RECORD):
+          print("Data will be recorded.")
         
         if(self.recordedDataFormat == RunDataFormat.SENTOOL_FD and not self.runType == RunType.RERUN):
             exit("You cannot use the SENTOOL_FD format for a live data run, since this program cannot record data in that format.")
@@ -22,7 +26,7 @@ class RunParams():
         self.ramp_type = "UP-Ramp"
         self.cfar_params = cfar_params
         # The minimum amount of data that must be kept in memory to window on
-        self.data_window = (2*cfar_params.guard_cells) + (2*cfar_params.subgroup) + 1
+        self.data_window_size = (2*cfar_params.guard_cells) + (2*cfar_params.subgroup) + 1
 
 # Updated configuration for the system parameters of the Radar
 def get_radar_params():
@@ -42,6 +46,10 @@ def get_ethernet_config():
     ethernetConfig.port = 1024
     ethernetConfig.ip = "10.0.0.59"
     return ethernetConfig
+
+def get_radar_module():
+    return GetRadarModule(updatedRadarParams=get_radar_params(),
+                                updatedEthernetConfig=get_ethernet_config())
 
 def get_cfar_params():
     return CFARParams()
