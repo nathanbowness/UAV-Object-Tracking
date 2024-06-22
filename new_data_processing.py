@@ -1,10 +1,11 @@
 
 from get_all_sensor_data import get_fd_data_from_radar
+from plots.FreqPlotWithDetections import FreqSignalPlotWithDetections
 from plots.FrequencySignalPlot import FreqSignalPlot
 from resources.FDDataMatrix import FDSignalType
 from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
 
-from config import RunParams, get_run_params
+from config import RunParams, get_run_params, get_plot_config
 from config import get_radar_module
 
 from resources.RadarDataWindow import RadarDataWindow
@@ -12,10 +13,15 @@ from resources.RunType import RunType
 
 def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
     
+    plot_config = get_plot_config()
     radar_module = get_radar_module()
     bin_index = 1
-    signal_type_to_plot = FDSignalType.I1
-    plotter = FreqSignalPlot(bin_index, signal_type_to_plot)  # Create a plotter instance
+    
+    if plot_config.plot_raw_fd_signal:
+        plotter = FreqSignalPlot(bin_index, plot_config.raw_fd_signal_to_plot)  # Create a plotter instance
+        
+    if plot_config.plot_raw_fd_with_threshold_signal:
+        plotter_2 = FreqSignalPlotWithDetections(bin_index, plot_config.raw_fd_signal_to_plot)  # Create a plotter instance
     
     # Infinite loop
     while True:
@@ -24,18 +30,24 @@ def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
           exit("Re-runs not implemented yet - but coming soon.")
         
         # Grab new data, add it to the window of saved data
-        radar_window.update_window_data(run_params, radar_module)
+        new_fd_data = get_fd_data_from_radar(run_params, radar_module)
+        radar_window.add_record(new_fd_data)
         
         # Until we have enough records for CFAR or analysis, just continue 
         if(len(radar_window.get_records()) < run_params.data_window_size):
             continue
         
-        signals, plot_timedelta = radar_window.get_signal_for_bin(bin_index, signal_type_to_plot)
-        plotter.update_plot(signals, plot_timedelta)
+        if plot_config.plot_raw_fd_signal:
+            signals, plot_timedelta = radar_window.get_signal_for_bin(bin_index, plot_config.raw_fd_signal_to_plot)
+            plotter.update_plot(signals, plot_timedelta)
+            
+        if plot_config.plot_raw_fd_with_threshold_signal:
+            signals, plot_timedelta, detections, thresholds = radar_window.get_signal_for_bin(bin_index, plot_config.raw_fd_signal_to_plot)
+            plotter_2.update_plot(signals, plot_timedelta, detections, thresholds )
 
 if __name__ == "__main__":
     run_params = get_run_params()
-    radar_data_window = RadarDataWindow(run_params.data_window_size,  30)
+    radar_data_window = RadarDataWindow(run_params.cfar_params.num_train, run_params.cfar_params.num_guard, 30)
     
     data_processing(run_params, radar_data_window)
     print("test")

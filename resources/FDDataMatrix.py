@@ -43,10 +43,10 @@ class FDDataMatrix():
         print(f"Data written to {full_path}")
         
 class FDSignalType(Enum):
-    I1=0,
-    Q1=1,
-    I2=2,
-    Q2=3,
-    RX1_PHASE=4,
-    RX2_PHASE=5,
+    I1=0
+    Q1=1
+    I2=2
+    Q2=3
+    RX1_PHASE=4
+    RX2_PHASE=5
     VIEW_ANGLE=6

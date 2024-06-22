@@ -1,13 +1,14 @@
 from RadarDevKit.ConfigClasses import SysParams
 from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
+from resources.FDDataMatrix import FDSignalType
 from resources.RunType import RunType, RunDataFormat
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 
 class CFARParams():    
     def __init__(self, guard_cell: int = 5, subgroup: int = 10, threshold: float = 10):
         # CasoCFAR Params
-        self.guard_cells = guard_cell
-        self.subgroup = subgroup
+        self.num_guard = guard_cell
+        self.num_train = subgroup
         self.threshold = threshold
         
 class RunParams():
@@ -26,7 +27,13 @@ class RunParams():
         self.ramp_type = "UP-Ramp"
         self.cfar_params = cfar_params
         # The minimum amount of data that must be kept in memory to window on
-        self.data_window_size = (2*cfar_params.guard_cells) + (2*cfar_params.subgroup) + 1
+        self.data_window_size = (2*cfar_params.num_guard) + (2*cfar_params.num_train) + 1
+        
+class PlotConfig():
+    def __init__(self):
+        self.plot_raw_fd_signal = False
+        self.raw_fd_signal_to_plot = FDSignalType.I2
+        self.plot_raw_fd_with_threshold_signal = True
 
 # Updated configuration for the system parameters of the Radar
 def get_radar_params():
@@ -56,3 +63,6 @@ def get_cfar_params():
 
 def get_run_params():
     return RunParams(get_cfar_params())
+
+def get_plot_config():
+    return PlotConfig()
