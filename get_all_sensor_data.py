@@ -31,8 +31,8 @@ def calculate_phase_data_and_view_angle(fc, raw_phase_data_iq25):
     alpha = np.arcsin((phase_differences * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS))
     alpha_degrees = np.degrees(alpha)  # Convert from radians to degrees
     
-    # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Estimated View Angle [Deg]] (512 x 3)
-    return np.vstack((phase1, phase2, alpha_degrees)).T
+    # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Phase_Diff, Estimated View Angle [Deg]] (512 x 4)
+    return np.vstack((phase1, phase2, phase_differences, alpha_degrees)).T
 
 # Get the FD data from the Radar
 def get_FD_data(radarModule: RadarModule, radarParams: SysParams) -> FDDataMatrix:
@@ -61,7 +61,7 @@ def get_FD_data(radarModule: RadarModule, radarParams: SysParams) -> FDDataMatri
         mag_data = [fd_data[n] for n in range(0, len(fd_data), 2)]
         raw_phase_data_iq25 = np.array([fd_data[n] for n in range(1, len(fd_data), 2)])
         
-        # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Estimated View Angle [Deg]] (512x3)
+        # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Phase_Diff, Estimated View Angle [Deg]] (512x4)
         phase_data = calculate_phase_data_and_view_angle(fc, raw_phase_data_iq25)
     
     # Convert to dBm

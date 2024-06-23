@@ -49,4 +49,5 @@ class FDSignalType(Enum):
     Q2=3
     RX1_PHASE=4
     RX2_PHASE=5
-    VIEW_ANGLE=6
+    PHASE_DIF=6
+    VIEW_ANGLE=7

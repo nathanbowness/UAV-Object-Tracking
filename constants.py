@@ -1,5 +1,5 @@
 # First experiment, moving forward then back up to 4.25 meters around 10 seconds each way
-SAVED_CSV_FILE_NAME = "./data_samples/walking_up_back_in_room.csv"
+# SAVED_CSV_FILE_NAME = "./data_samples/walking_up_back_in_room.csv"
 
 # SAVED_CSV_FILE_NAME = "street_car.csv"
 
@@ -21,6 +21,8 @@ SAVED_CSV_FILE_NAME = "./data_samples/walking_up_back_in_room.csv"
 # SAVED_CSV_FILE_NAME = "street_cars_3driving_byhouse_diagonal.csv"
 
 # SAVED_CSV_FILE_NAME = "./data_samples/street_cars_3driving_byhouse_diagonal.csv"
+
+SAVED_CSV_FILE_NAME = "./data_samples/new_data.csv"
 
 SPEED_LIGHT = 299792458  # Speed of light in m/s
 DIST_BETWEEN_ANTENNAS = 0.00625 # Distance between recievers of radar

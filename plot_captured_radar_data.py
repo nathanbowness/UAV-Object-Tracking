@@ -85,8 +85,8 @@ def prepare_heatmap_data(data, min_bin, max_bin):
     for t_idx, timestamp in enumerate(timestamps):
         for r_idx, range_bin in enumerate(selected_bins):
             if range_bin in data[timestamp]:
-                # heatmap_data[t_idx, r_idx] = data[timestamp][range_bin][0]  # Use I1 signal for example
-                heatmap_data[t_idx, r_idx] = max(data[timestamp][range_bin][0], data[timestamp][range_bin][1], data[timestamp][range_bin][2], data[timestamp][range_bin][3])  # Max of all datapoints
+                heatmap_data[t_idx, r_idx] = data[timestamp][range_bin][1]  # Use I1 signal for examples
+                # heatmap_data[t_idx, r_idx] = max(data[timestamp][range_bin][0], data[timestamp][range_bin][1], data[timestamp][range_bin][2], data[timestamp][range_bin][3])  # Max of all datapoints
     
     return heatmap_data, timestamps, selected_bins
 
@@ -132,5 +132,5 @@ if __name__ == "__main__":
     max_bin = 2
     
     plot_fd_range_bins_in_grid(raw_data, 0, 3)  # Adjust min_range_bin, max_rang_bin sizes
-    plot_heatmap(raw_data, 0, 100)
+    plot_heatmap(raw_data, 0, 120)
     print("Finished plotting the data.")

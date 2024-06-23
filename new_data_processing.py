@@ -30,7 +30,7 @@ def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
     plot_config = get_plot_config()
     radar_module = get_radar_module()
     bin_index = 1
-    max_distance_plotted = 100
+    max_distance_plotted = 120
     
     if plot_config.plot_raw_fd_signal:
         plotter = FreqSignalPlot(bin_index, plot_config.raw_fd_signal_to_plot, smoothing_window=plot_config.plot_raw_fd_smooth_signal)  # Create a plotter instance
