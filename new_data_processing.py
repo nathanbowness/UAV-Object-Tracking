@@ -2,12 +2,12 @@
 from get_all_sensor_data import get_fd_data_from_radar
 from plots.FreqPlotWithDetections import FreqSignalPlotWithDetections
 from plots.FrequencySignalPlot import FreqSignalPlot
-from resources.FDDataMatrix import FDSignalType
-from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
 
 from config import RunParams, get_run_params, get_plot_config
 from config import get_radar_module
+import matplotlib.pyplot as plt
 
+from plots.RadarFrequencyHeatMap import RadarFrequencyHeatMap
 from resources.RadarDataWindow import RadarDataWindow
 from resources.RunType import RunType
 
@@ -22,6 +22,16 @@ def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
         
     if plot_config.plot_raw_fd_with_threshold_signal:
         plotter_2 = FreqSignalPlotWithDetections(bin_index, plot_config.raw_fd_signal_to_plot)  # Create a plotter instance
+    
+    if plot_config.plot_raw_fd_heatmap:
+        plotter_3 = RadarFrequencyHeatMap(max_distance=5)
+        plotter_3.show()
+        
+    if plot_config.plot_fd_detections:
+        plotter_4 = RadarFrequencyHeatMap(max_distance=5)
+        plotter_4.show()
+    
+    update_counter = 0
     
     # Infinite loop
     while True:
@@ -43,7 +53,20 @@ def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
             
         if plot_config.plot_raw_fd_with_threshold_signal:
             signals, plot_timedelta, detections, thresholds = radar_window.get_signal_for_bin(bin_index, plot_config.raw_fd_signal_to_plot)
-            plotter_2.update_plot(signals, plot_timedelta, detections, thresholds )
+            plotter_2.update_plot(signals, plot_timedelta, detections, thresholds)
+        
+        # Update the frequency heatmap less frequently
+        if update_counter % 10 == 0:
+            
+            signals, plot_times, detections = radar_window.get_signal_for_bins(plot_config.raw_fd_signal_to_plot)
+            if plot_config.plot_raw_fd_heatmap:
+                plotter_3.update_data(plot_times, signals)
+            
+            if plot_config.plot_fd_detections:
+                plotter_4.update_data(plot_times, detections)
+            plt.pause(0.02)  # Allow time for GUI to update
+        
+        update_counter += 1
 
 if __name__ == "__main__":
     run_params = get_run_params()

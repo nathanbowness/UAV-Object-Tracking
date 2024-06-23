@@ -20,7 +20,7 @@
 #3 cars swooping by nicely - good results, no people walking by in the background
 # SAVED_CSV_FILE_NAME = "street_cars_3driving_byhouse_diagonal.csv"
 
-SAVED_CSV_FILE_NAME = " new_sample.csv"
+SAVED_CSV_FILE_NAME = "./data_samples/street_cars_3driving_byhouse_diagonal.csv"
 
 SPEED_LIGHT = 299792458  # Speed of light in m/s
 DIST_BETWEEN_ANTENNAS = 0.00625 # Distance between recievers of radar

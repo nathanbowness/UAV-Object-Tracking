@@ -1,17 +1,23 @@
 from RadarDevKit.ConfigClasses import SysParams
 from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
-from cfar import CfarType
 from resources.FDDataMatrix import FDSignalType
 from resources.RunType import RunType, RunDataFormat
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 
+from enum import Enum
+
 class CFARParams():    
-    def __init__(self, num_guard: int = 3, num_train: int = 10, threshold: float = 5.0):
+    def __init__(self, num_guard: int = 3, num_train: int = 10, threshold: float = 10.0):
         # CasoCFAR Params
         self.cfar_type = CfarType.LEADING_EDGE
         self.num_guard = num_guard
         self.num_train = num_train
-        self.threshold = threshold
+        self.threshold = 0.4
+        self.threshold_is_percentage = True
+
+class CfarType(Enum):
+    CASO = 0,
+    LEADING_EDGE = 1
         
 class RunParams():
     def __init__(self, cfar_params: CFARParams):
@@ -34,8 +40,10 @@ class RunParams():
 class PlotConfig():
     def __init__(self):
         self.plot_raw_fd_signal = False
-        self.raw_fd_signal_to_plot = FDSignalType.I2
-        self.plot_raw_fd_with_threshold_signal = True
+        self.raw_fd_signal_to_plot = FDSignalType.I1
+        self.plot_raw_fd_with_threshold_signal = False
+        self.plot_raw_fd_heatmap = True
+        self.plot_fd_detections = True
 
 # Updated configuration for the system parameters of the Radar
 def get_radar_params():
