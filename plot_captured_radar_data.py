@@ -132,5 +132,5 @@ if __name__ == "__main__":
     max_bin = 2
     
     plot_fd_range_bins_in_grid(raw_data, 0, 3)  # Adjust min_range_bin, max_rang_bin sizes
-    plot_heatmap(raw_data, 0, 6)
+    plot_heatmap(raw_data, 0, 100)
     print("Finished plotting the data.")

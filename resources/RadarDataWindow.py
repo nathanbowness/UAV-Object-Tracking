@@ -1,11 +1,8 @@
 from collections import deque
 from cfar import CfarType, cfar_single, cfar_required_cells
-from range_bin_calculator import get_range_bins, get_range_bins_for_distance, get_range_bin_indexes
+from range_bin_calculator import get_range_bins
 from resources.FDDataMatrix import FDDataMatrix, FDSignalType
-from RadarDevKit.RadarModule import RadarModule, GetRadarModule
-from get_all_sensor_data import get_fd_data_from_radar
 from config import RunParams, CFARParams
-import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
@@ -88,12 +85,19 @@ class RadarDataWindow():
         detections = []
         thresholds = []
 
-        # Single loop to collect both timestamps and I1 values
-        for stored_data in self.deque:
-            time_since_start.append(stored_data.relativeTime)
-            raw_values.append(stored_data.raw_data.fd_data[bin_index, signalType.value])  # Adjusted for correct access to desired column
-            detections.append(stored_data.detection_data.dectections[bin_index, signalType.value*2])
-            thresholds.append(stored_data.detection_data.dectections[bin_index, signalType.value*2+1])
+        # Single loop to collect both time stamps, frequency values, detections and thresholds
+        if signalType.value < 4:
+            for stored_data in self.deque:
+                time_since_start.append(stored_data.relativeTime)
+                raw_values.append(stored_data.raw_data.fd_data[bin_index, signalType.value])  # Adjusted for correct access to desired column
+                detections.append(stored_data.detection_data.dectections[bin_index, signalType.value*2])
+                thresholds.append(stored_data.detection_data.dectections[bin_index, signalType.value*2+1])
+        # For plotting the Rx Phase, and View Angles
+        else:
+            for stored_data in self.deque:
+                time_since_start.append(stored_data.relativeTime)
+                raw_values.append(stored_data.raw_data.fd_data[bin_index, signalType.value])  # Adjusted for correct access to desired column
+            
 
         return raw_values, time_since_start, detections, thresholds
     
@@ -112,10 +116,12 @@ class RadarDataWindow():
         # I want the values, to be the value of the radar signal in dBm
         # I want the radar_signal_for_bins's 512 values to essentially be plotted along the x axis according to their respective range bin
         
-        for stored_data in self.deque:
-            time_since_start.append(stored_data.relativeTime)
-            radar_signal_for_bins.append(stored_data.raw_data.fd_data[:, signalType.value])
-            detections_for_bins.append(stored_data.detection_data.dectections[:, signalType.value*2])
+        # Skip non-frequency data
+        if signalType.value < 4:
+            for stored_data in self.deque:
+                time_since_start.append(stored_data.relativeTime)
+                radar_signal_for_bins.append(stored_data.raw_data.fd_data[:, signalType.value])
+                detections_for_bins.append(stored_data.detection_data.dectections[:, signalType.value*2])
             
         # radar_signal_for_bins = np.array(radar_signal_for_bins)
     
