@@ -14,7 +14,7 @@ def calculate_phase_data_and_view_angle(fc, raw_phase_data_iq25):
     max_iq25 = 2**25
     phase_data_radians = (raw_phase_data_iq25 / (max_iq25))
     
-    iq_data = np.array(phase_data_radians).reshape(-1, 4)  # Reshape into Nx4 where each row is [I1, Q1, I2, Q2]
+    iq_data = np.array(phase_data_radians).reshape(-1, 512).T  # Reshape into Nx4 where each row is [I1, Q1, I2, Q2]
 
     I1_phase = iq_data[:, 0]
     Q1_phase = iq_data[:, 1]
@@ -72,11 +72,26 @@ def get_FD_data(radarModule: RadarModule, radarParams: SysParams) -> FDDataMatri
             mag_data[n] = 20 * np.log10(mag_data[n] / 2.**21)
         except:
             mag_data[n] = min_dbm
+            
+    fd_data = []
+    n = 0
+    for ch in range(4):  # maximum possible channels = 4
+        if radarModule.sysParams.active_RX_ch & (1 << ch):
+            ind1 = n * radarModule.FD_Data.nSamples
+            ind2 = ind1 + radarModule.FD_Data.nSamples
+            n += 1
+            fd_data.append(mag_data[ind1:ind2])
+        else:
+            fd_data.append([0] * radarModule.FD_Data.nSamples)
     
     mag_data = np.array(mag_data)
+    fd_data = np.array(fd_data).T
+    # mag_reshape = mag_data.reshape(-1, 4)
+    
+    # mag_reshape_proper = mag_data.reshape(-1, 512).T
     
     # Create the FDDataMatrix of measured data with a timestamp - [512, 7] => [I1, Q1, I2, Q2, Rx1 Phase, Rx2 Phase, Estimated View Angle]
-    return FDDataMatrix(np.hstack((mag_data.reshape(-1, 4), phase_data)))
+    return FDDataMatrix(np.hstack((fd_data, phase_data)))
 
 def get_fd_data_from_radar(run_params: RunParams, 
                            radar_module: RadarModule,

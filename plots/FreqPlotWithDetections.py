@@ -4,13 +4,14 @@ import numpy as np
 from resources.FDDataMatrix import FDSignalType
 
 class FreqSignalPlotWithDetections:
-    def __init__(self, bin_index, fdDataType, ylim=(-1, 1), xlim=(0, 512)):
+    def __init__(self, bin_index, fdDataType, smoothing_window: int = 0):
         plt.ion()  # Turn on interactive plotting mode
         self.fig, self.ax = plt.subplots()
         self.raw_signal_line, = self.ax.plot([], [], 'r-', label='Raw Signal')
         # Initialize detections line differently, we'll update markers only when needed
         self.detections_line, = self.ax.plot([], [], 'bx', label='Detections')  # Use 'x' marker
         self.threshold_line, = self.ax.plot([], [], 'g-', label='Threshold')
+        self.smoothing_window = smoothing_window
         
         # self.ax.set_xlim(xlim)
         # self.ax.set_ylim(ylim)
@@ -21,6 +22,9 @@ class FreqSignalPlotWithDetections:
         self.bin_index = bin_index
 
     def update_plot(self, raw_signals, plot_timedelta, detections, threshold):
+        if self.smoothing_window:
+            raw_signals = self.smooth_signal(raw_signals, self.smoothing_window)
+
         # Raw signals
         self.raw_signal_line.set_xdata(plot_timedelta)
         self.raw_signal_line.set_ydata(raw_signals)
@@ -43,6 +47,17 @@ class FreqSignalPlotWithDetections:
     def close(self):
         plt.ioff()  # Turn off interactive plotting mode
         plt.close(self.fig)
+        
+    @staticmethod
+    def smooth_signal(x, window_size):
+        """
+        Smooths the signal using a moving average filter.
+        
+        x: Input signal array.
+        window_size: Number of samples over which to average.
+        """
+        window = np.ones(int(window_size)) / float(window_size)
+        return np.convolve(x, window, 'same')
 
 # class FreqSignalPlotWithDetections:
 #     def __init__(self, bin_index, fdDataType: FDSignalType, ylim=(-1, 1), xlim=(0, 512)):

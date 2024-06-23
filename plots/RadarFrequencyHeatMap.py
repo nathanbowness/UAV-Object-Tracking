@@ -5,7 +5,8 @@ from matplotlib.animation import FuncAnimation
 from range_bin_calculator import get_range_bin_indexes
 
 class RadarFrequencyHeatMap():
-    def __init__(self, min_distance=0, max_distance=None, range_bin_size=0.2499):
+    def __init__(self, title, min_distance=0, max_distance=None, range_bin_size=0.2499):
+        self.title = title
         self.fig, self.ax = plt.subplots(figsize=(15, 8))
         self.im = None
         self.time_since_start = []
@@ -24,7 +25,7 @@ class RadarFrequencyHeatMap():
         self.im = self.ax.imshow(np.zeros((1, 512)), aspect='auto', cmap='jet', origin='lower')
         self.ax.set_ylabel('Measurement Time (s)')
         self.ax.set_xlabel('Slant Range (m)')
-        self.ax.set_title('Radar Signal Heatmap')
+        self.ax.set_title(self.title)
         plt.colorbar(self.im, ax=self.ax, label='Signal Power Ratio (dBm)')
         return self.im,
 
