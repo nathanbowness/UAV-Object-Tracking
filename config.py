@@ -12,8 +12,8 @@ class CFARParams():
         self.cfar_type = CfarType.LEADING_EDGE
         self.num_guard = num_guard
         self.num_train = num_train
-        self.threshold = 0.4
-        self.threshold_is_percentage = True
+        self.threshold = 10
+        self.threshold_is_percentage = False
 
 class CfarType(Enum):
     CASO = 0,
@@ -39,10 +39,11 @@ class RunParams():
         
 class PlotConfig():
     def __init__(self):
-        self.plot_raw_fd_signal = True
-        self.raw_fd_signal_to_plot = FDSignalType.RX1_PHASE
+        self.plot_raw_fd_signal = False
+        self.plot_raw_fd_smooth_signal = 0
+        self.raw_fd_signal_to_plot = FDSignalType.I1
         self.plot_raw_fd_with_threshold_signal = False
-        self.plot_raw_fd_heatmap = False
+        self.plot_raw_fd_heatmap = True
         self.plot_fd_detections = False
 
 # Updated configuration for the system parameters of the Radar
