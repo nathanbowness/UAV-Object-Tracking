@@ -10,7 +10,10 @@
 				"ms-python.python",
 				"ms-python.debugpy",
 				"ms-python.vscode-pylance",
-				"KevinRose.vsc-python-indent"
+				"KevinRose.vsc-python-indent",
+				"ms-toolsai.jupyter",
+				"ms-toolsai.jupyter-keymap",
+				"ms-toolsai.jupyter-renderers"
 			]
 		}
 	},

@@ -19,6 +19,14 @@
             "console": "integratedTerminal"
         },
 
+        {
+            "name": "Python: Object Tracking Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/object_tracking_tests.py",
+            "console": "integratedTerminal"
+        },
+
 
         {
             "name": "Python: Main",

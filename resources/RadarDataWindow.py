@@ -1,11 +1,14 @@
 from collections import deque
 from cfar import CfarType, cfar_single, cfar_required_cells
+from constants import SPEED_LIGHT
 from resources.FDDataMatrix import FDDataMatrix, FDSignalType
 from config import RunParams, CFARParams
 
 import numpy as np
 import pandas as pd
 from datetime import timedelta
+
+from scipy.signal import stft
 
 from resources.FDDetectionMatrix import FDDetectionMatrix # type: ignore
 
@@ -31,6 +34,7 @@ class RadarDataWindow():
         self.timestamps = deque()
         self.raw_records = deque()
         self.detection_records = deque()
+        self.velocity_records = deque()
         self.capacity = capacity
         self.duration = timedelta(seconds=duration_seconds) if duration_seconds else None
         
@@ -64,6 +68,7 @@ class RadarDataWindow():
         
     def calculate_detections(self, record_timestamp: pd.Timestamp):
         detection_data = self.process_new_data()
+        velocity = self.velocity_calcs()
         self.detection_records.append(detection_data)
         
     def get_raw_records(self):
@@ -71,6 +76,37 @@ class RadarDataWindow():
     
     def get_detection_records(self):
         return self.detection_records
+    
+    def velocity_calcs(self):
+        
+        if len(self.timestamps) < 2:
+            return None
+
+        f_c = (24000*(10**6)) + (600 / 2)*(10**6) # Central frequency in Hz - Conversion from Mhz to 
+        last_record = self.raw_records[-1]
+        second_last_record = self.raw_records[-2]
+        
+        delta_phase_Rx1 = last_record[:,FDSignalType.RX1_PHASE.value] - second_last_record[:,FDSignalType.RX1_PHASE.value]
+        
+        delta_phase_Rx1_unwrapped = np.unwrap(delta_phase_Rx1, axis=0)
+        
+        measurement_rate = 5  # Number of measurements per second (adjust to your radar's measurement rate)
+        f_D = delta_phase_Rx1_unwrapped * measurement_rate / (2 * np.pi)
+
+        # Compute the velocity for micro-Doppler analysis
+        velocity = f_D * SPEED_LIGHT / (2 * f_c)
+        
+        f, t, Zxx = stft(velocity, fs=measurement_rate, nperseg=256, noverlap=128)
+        
+        # plt.figure(figsize=(10, 5))
+        # plt.pcolormesh(t, f, np.abs(Zxx), shading='gouraud')
+        # plt.title('Micro-Doppler Time-Frequency Analysis')
+        # plt.xlabel('Range Bins')
+        # plt.ylabel('Frequency (Hz)')
+        # plt.colorbar(label='Magnitude')
+        # plt.show()
+        
+        return None
     
     def process_new_data(self):
         if len(self.raw_records) < self.required_cells_cfar:

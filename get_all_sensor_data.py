@@ -36,7 +36,7 @@ def calculate_phase_data_and_view_angle(fc, raw_phase_data_iq25):
 
 # Get the FD data from the Radar
 def get_FD_data(radarModule: RadarModule, radarParams: SysParams) -> FDDataMatrix:
-    
+
     fc = (radarParams.minFreq*(10**6)) + (radarParams.manualBW / 2)*(10**6) # Central frequency in Hz - Conversion from Mhz to Hz
     
     # Process the FD data based on the data type
