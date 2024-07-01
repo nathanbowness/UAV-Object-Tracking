@@ -156,8 +156,8 @@ class RadarModule():
         if not self.connected or self.error:
             return
         
-        print('========================')
-        print('GetTdData')
+        # print('========================')
+        # print('GetTdData')
 
         # execute the respective command ID
         try:

@@ -4,6 +4,16 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
+        {
+            "name": "Debug Jupyter Notebook",
+            "type": "debugpy",
+            "request": "launch",
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "program": "${file}",
+            "cwd": "${workspaceFolder}"
+        },
         {
             "name": "Python: Get All Sensor Data",
             "type": "debugpy",
@@ -18,7 +28,6 @@
             "program": "${workspaceFolder}/new_data_processing.py",
             "console": "integratedTerminal"
         },
-
         {
             "name": "Python: Object Tracking Tests",
             "type": "debugpy",
@@ -26,8 +35,6 @@
             "program": "${workspaceFolder}/object_tracking_tests.py",
             "console": "integratedTerminal"
         },
-
-
         {
             "name": "Python: Main",
             "type": "debugpy",
