@@ -1,30 +1,53 @@
 
+from matplotlib.animation import FuncAnimation
 import pandas as pd
 from get_all_sensor_data import get_fd_data_from_radar
 from plots.FreqPlotWithDetections import FreqSignalPlotWithDetections
 from plots.FrequencySignalPlot import FreqSignalPlot
+import multiprocessing
 
 from config import RunParams, get_run_params, get_plot_config
 from config import get_radar_module
 import matplotlib.pyplot as plt
 import numpy as np
+import queue
 
 from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
+from plots.PolarPlotDynamic import PolarPlotDynamic
 from plots.RadarFrequencyHeatMap import RadarFrequencyHeatMap
+from range_bin_calculator import get_range_bin_for_indexs
 from resources.FDDataMatrix import FDSignalType
 from resources.RadarDataWindow import RadarDataWindow
 from resources.RunType import RunType
+import threading
 
-plotts = PlotDetectionsDynamic(plot_titles=["Rx1 Detections", "Rx2 Detections"], max_steps=50, interval=100)
+plotts = PlotDetectionsDynamic(plot_titles=["Rx1 Detections", "Rx2 Detections"], max_steps=50, interval=500)
+polarPlot = PolarPlotDynamic(max_distance=10,interval=500)
 
-def object_tracking(latest_detection_data):
+def object_tracking(latest_detection_data, raw_records, update_counter):
+    
     detectionsRx1 = np.logical_or(latest_detection_data[:,FDSignalType.I1.value*2], latest_detection_data[:,FDSignalType.Q1.value*2]).astype(int)
     detectionsRx2 = np.logical_or(latest_detection_data[:,FDSignalType.I2.value*2], latest_detection_data[:,FDSignalType.Q2.value*2]).astype(int)
     
-    plotts.update_data([detectionsRx1, detectionsRx2])
-    plt.pause(0.02)  # Allow time for GUI to update
+    # Mask any detections that have an angle of -90 or 90 -- not valid objects, or out of frame.
+    angles = raw_records[:,FDSignalType.VIEW_ANGLE.value]
+    angles_mask = np.where((angles == 90) | (angles == -90))
+    detectionsRx1[angles_mask] = 0
+    detectionsRx2[angles_mask] = 0
     
-    print()
+    # Get the total detections now after the masking, and their indexes
+    detectionsTotal = np.logical_or(detectionsRx1, detectionsRx2).astype(int)
+    detectionIndexes = np.where(detectionsTotal == 1)[0]
+    
+    # Get the actual detections to plot
+    detectionsDistanceArray = get_range_bin_for_indexs(detectionIndexes, 0.27)
+    detectionsAngle = raw_records[:,FDSignalType.VIEW_ANGLE.value][detectionIndexes]
+    
+    plotts.update_data([detectionsRx1, detectionsRx2])
+    polarPlot.update_data(detectionsDistanceArray, detectionsAngle, clear=True)
+    
+    if (update_counter % 100 == 0):
+        plt.pause(0.02)  # Allow time for GUI to update
 
 def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
     plot_config = get_plot_config()
@@ -39,8 +62,8 @@ def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
         plotter_2 = FreqSignalPlotWithDetections(bin_index, plot_config.raw_fd_signal_to_plot)  # Create a plotter instance
     
     # if plot_config.plot_raw_fd_heatmap:
-    plotter_3 = RadarFrequencyHeatMap(title="Raw FD Data Heatmap",max_distance=max_distance_plotted)
-    plotter_3.show()
+    # plotter_3 = RadarFrequencyHeatMap(title="Raw FD Data Heatmap",max_distance=max_distance_plotted)
+    # plotter_3.show()
         
     if plot_config.plot_fd_detections:
         plotter_4 = RadarFrequencyHeatMap(title="FD Calculated Detections Heatmap", max_distance=max_distance_plotted)
@@ -65,7 +88,8 @@ def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
         
         # DO SOME OBJECT Tracking - based off the most recent detection
         detect_data = radar_window.detection_records[-1]
-        object_tracking(detect_data)
+        raw_records = radar_window.raw_records[-1]
+        object_tracking(detect_data, raw_records, update_counter)
         
         if plot_config.plot_raw_fd_signal:
             signals, plot_timedelta, _, _= radar_window.get_signal_for_bin(bin_index, plot_config.raw_fd_signal_to_plot)
@@ -75,15 +99,14 @@ def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
             signals, plot_timedelta, detections, thresholds = radar_window.get_signal_for_bin(bin_index, plot_config.raw_fd_signal_to_plot)
             plotter_2.update_plot(signals, plot_timedelta, detections, thresholds)
         
-        # Latest data
-        signal = radar_window.raw_records[-1]
-        signal_to_plot = signal[:, plot_config.raw_fd_signal_to_plot.value]
-        new_time = (radar_window.timestamps[-1] - radar_window.creation_time).total_seconds()
-        plotter_3.update_data(new_time, signal_to_plot)
-        
-        
         # Update the frequency heatmap less frequently
         # if update_counter % 10 == 0:
+        #     signal = raw_records
+        #     signal_to_plot = signal[:, plot_config.raw_fd_signal_to_plot.value]
+        #     new_time = (radar_window.timestamps[-1] - radar_window.creation_time).total_seconds()
+        #     plotter_3.update_data(new_time, signal_to_plot)
+        #     plt.pause(0.02)  # Allow time for GUI to update
+            
         #     # Every 10 times, check if there are any records to remove
         #     radar_window.remove_old_records()
             
@@ -93,15 +116,13 @@ def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
             
         #     if plot_config.plot_fd_detections:
         #         plotter_4.update_data(plot_times, detections)
-        #     plt.pause(0.02)  # Allow time for GUI to update
         
         update_counter += 1
 
 if __name__ == "__main__":
     run_params = get_run_params()
     radar_data_window = RadarDataWindow(cfar_params=run_params.cfar_params, 
-                                        start_time=pd.Timestamp.now(),
-                                        duration_seconds=30)
+                                        start_time=pd.Timestamp.now())
     
     data_processing(run_params, radar_data_window)
     print("test")

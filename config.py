@@ -7,12 +7,12 @@ from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from enum import Enum
 
 class CFARParams():    
-    def __init__(self, num_guard: int = 2, num_train: int = 11, threshold: float = 10.0):
+    def __init__(self, num_guard: int = 2, num_train: int = 5, threshold: float = 10.0):
         # CasoCFAR Params
         self.cfar_type = CfarType.LEADING_EDGE
         self.num_guard = num_guard
         self.num_train = num_train
-        self.threshold = 15
+        self.threshold = 12
         self.threshold_is_percentage = False
 
 class CfarType(Enum):

@@ -63,10 +63,18 @@ def calculate_phase_data_and_view_angle(fc, raw_phase_data_iq25):
     # phase1 = np.arctan2(Q1_phase, I1_phase) # ? This is old - remove it eventuall
     # phase2 = np.arctan2(Q2_phase, I2_phase) # ? This is old - remove it eventuall
     # phase1 = np.arctan2(Q1, I1) ? This is old - remove it eventually
-    phase_differences = phase2 - phase1  
+    
+    # phase_differences = np.unwrap([phase1, phase2], axis=0)[1] - np.unwrap([phase1, phase2], axis=0)[0]
+    phase_differences = phase2 - phase1
+    phase_differences_unwrapped = np.unwrap([phase_differences])[0]
 
     # Calculate the view angle
-    alpha = np.arcsin((phase_differences * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS))
+    sin_alpha = (phase_differences_unwrapped * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS)
+    
+    # Ensure sin_alpha is within the valid range for arcsin
+    sin_alpha = np.clip(sin_alpha, -1, 1)
+        
+    alpha = np.arcsin(sin_alpha)
     alpha_degrees = np.degrees(alpha)  # Convert from radians to degrees
     
     # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Phase_Diff, Estimated View Angle [Deg]] (512 x 4)
@@ -108,8 +116,6 @@ def get_FD_data_angle(radarModule: RadarModule, radarParams: SysParams):
             fd_data.append([0] * radarModule.FD_Data.nSamples)
     
     fd_data = np.array(fd_data)
-    
-    
     
     # print(fd_data.shape)
     angle_data = np.array(angle_data)
