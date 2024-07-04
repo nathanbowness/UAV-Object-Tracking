@@ -41,7 +41,7 @@ class RadarDataWindow():
         # Cfar params
         self.cfar_params = cfar_params
         self.index_to_eval = cfar_params.num_train + cfar_params.num_guard
-        self.required_cells_cfar = cfar_required_cells(cfar_params)
+        self.required_cells_cfar = cfar_required_cells(cfar_params) + 5
 
     def remove_old_records(self):
         current_time = pd.Timestamp.now()
@@ -68,7 +68,7 @@ class RadarDataWindow():
         
     def calculate_detections(self, record_timestamp: pd.Timestamp):
         detection_data = self.process_new_data()
-        velocity = self.velocity_calcs()
+        # velocity = self.velocity_calcs()
         self.detection_records.append(detection_data)
         
     def get_raw_records(self):

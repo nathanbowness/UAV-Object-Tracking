@@ -3,6 +3,12 @@ import numpy as np
 def get_range_bin_for_index(index, bin_size):
     return index * bin_size
 
+def get_range_bin_for_indexs(indexArray, bin_size):
+    resultArray = None
+    if indexArray is not None and indexArray.size > 0:
+        resultArray = indexArray * bin_size
+    return resultArray
+
 def get_range_bins(bin_size):
     range_bins = np.arange(1, 513) * bin_size
     return range_bins
