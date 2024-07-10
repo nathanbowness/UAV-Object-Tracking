@@ -7,12 +7,12 @@ from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from enum import Enum
 
 class CFARParams():    
-    def __init__(self, num_guard: int = 2, num_train: int = 10, threshold: float = 10.0):
+    def __init__(self, num_guard: int = 2, num_train: int = 50, threshold: float = 10.0):
         # CasoCFAR Params
         self.cfar_type = CfarType.LEADING_EDGE
         self.num_guard = num_guard
         self.num_train = num_train
-        self.threshold = 12
+        self.threshold = threshold
         self.threshold_is_percentage = False
 
 class CfarType(Enum):
@@ -35,7 +35,10 @@ class RunParams():
         self.ramp_type = "UP-Ramp"
         self.cfar_params = cfar_params
         # The minimum amount of data that must be kept in memory to window on
-        self.data_window_size = (2*cfar_params.num_guard) + (2*cfar_params.num_train) + 1
+        if(self.cfar_params.cfar_type == CfarType.CASO):
+            self.data_window_size = cfar_params.num_guard + cfar_params.num_train + 1
+        else:
+            self.data_window_size = (2*cfar_params.num_guard) + (2*cfar_params.num_train) + 1
         
 class PlotConfig():
     def __init__(self):

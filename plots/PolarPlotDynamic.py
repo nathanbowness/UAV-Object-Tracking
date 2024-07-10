@@ -4,7 +4,7 @@ from matplotlib.animation import FuncAnimation
 import random
 
 class PolarPlotDynamic:
-    def __init__(self, max_points=500, interval=1000, min_angle=-90, max_angle=90, max_distance=100, angle_unit='degrees'):
+    def __init__(self, max_points=500, interval=1000, min_angle=-70, max_angle=70, max_distance=100, angle_unit='degrees'):
         self.max_points = max_points
         self.interval = interval
         self.min_angle = min_angle
@@ -21,12 +21,14 @@ class PolarPlotDynamic:
         self.fig, self.ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(10, 10))
         self.scatter = self.ax.scatter([], [], c=[])
         
-        # Customize the plot to display data from 90 to -90 degrees pointed upward
+        # Customize the plot to display data from min_angle to - max_angle degrees pointed upward
         self.ax.set_theta_zero_location('N')  # Zero degrees is at the top
         self.ax.set_theta_direction(-1)  # Clockwise direction
         self.ax.set_thetamin(min_angle)
         self.ax.set_thetamax(max_angle)
         self.ax.set_ylim(0, max_distance)  # Set the maximum distance
+        self.ax.set_ylabel('Range (m)', fontsize=12)
+        self.ax.set_title(f'Radar Detections', fontsize=18)
         
         # Initialize the animation
         self.anim = FuncAnimation(self.fig, self.update_plot, init_func=self.init_plot, interval=interval, blit=True, cache_frame_data=False)

@@ -1,16 +1,13 @@
 
-from matplotlib.animation import FuncAnimation
 import pandas as pd
 from get_all_sensor_data import get_fd_data_from_radar
 from plots.FreqPlotWithDetections import FreqSignalPlotWithDetections
 from plots.FrequencySignalPlot import FreqSignalPlot
-import multiprocessing
 
 from config import RunParams, get_run_params, get_plot_config
 from config import get_radar_module
 import matplotlib.pyplot as plt
 import numpy as np
-import queue
 
 from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
 from plots.PolarPlotDynamic import PolarPlotDynamic
@@ -19,10 +16,9 @@ from range_bin_calculator import get_range_bin_for_indexs
 from resources.FDDataMatrix import FDSignalType
 from resources.RadarDataWindow import RadarDataWindow
 from resources.RunType import RunType
-import threading
 
-plotts = PlotDetectionsDynamic(plot_titles=["Rx1 Detections", "Rx2 Detections"], max_steps=50, interval=500)
-polarPlot = PolarPlotDynamic(max_distance=10,interval=500)
+plotts = PlotDetectionsDynamic(bin_size=0.27, plot_titles=["Rx1 Detections", "Rx2 Detections"], max_steps=50, interval=50, max_bins=20)
+polarPlot = PolarPlotDynamic(max_distance=5,interval=50)
 
 def object_tracking(latest_detection_data, raw_records, update_counter):
     
@@ -46,8 +42,7 @@ def object_tracking(latest_detection_data, raw_records, update_counter):
     plotts.update_data([detectionsRx1, detectionsRx2])
     polarPlot.update_data(detectionsDistanceArray, detectionsAngle, clear=True)
     
-    if (update_counter % 100 == 0):
-        plt.pause(0.02)  # Allow time for GUI to update
+    plt.pause(0.1)  # Allow time for GUI to update
 
 def data_processing(run_params: RunParams, radar_window : RadarDataWindow):
     plot_config = get_plot_config()
