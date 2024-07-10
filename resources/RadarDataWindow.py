@@ -24,7 +24,7 @@ class StoredData():
 
 class RadarDataWindow():
     """
-    timestamps -> timestamp
+    timestamps -> timestamp of when each record was recorded
     raw_records -> np array (512, 7) [range_bins, I1, Q1, I2, Q2, Rx1 Phase, Rx2 Phase, View Angle]
     detection_records -> np array (512, 8) [range_bins, I1 Det, I1_Thresh, Q1 Det, Q1_Thresh, I2 Det, I2_Thresh, Q2 Det, Q2_Thresh]
     """
@@ -77,6 +77,7 @@ class RadarDataWindow():
     def get_detection_records(self):
         return self.detection_records
     
+    # TODO - fix this, currently do not have usable outputs
     def velocity_calcs(self):
         
         if len(self.timestamps) < 2:

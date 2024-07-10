@@ -29,7 +29,7 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: Radar Processing",
+            "name": "Python: Real-Time Radar Processing",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/new_data_processing.py",
@@ -47,13 +47,6 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Tracking 1",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/tracking_test.py",
             "console": "integratedTerminal"
         },
         {
