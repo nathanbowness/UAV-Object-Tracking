@@ -6,9 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-def get_range_bins(bin_size):
-    range_bins = np.arange(1, 513) * bin_size
-    return range_bins
+from cfar import get_range_bins
 
 class PlotDetectionsDynamic:
     def __init__(self, bin_size=0.27, num_plots=2, plot_titles=["Plot1", "Plot2"], max_steps=50, x_axis_values=512, max_bins=512, interval=1000):

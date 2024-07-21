@@ -1,54 +1,10 @@
 from RadarDevKit.ConfigClasses import SysParams
 from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
-from resources.FDDataMatrix import FDSignalType
-from resources.RunType import RunType, RunDataFormat
-from RadarDevKit.RadarModule import RadarModule, GetRadarModule
-
-from enum import Enum
-
-class CFARParams():    
-    def __init__(self, num_guard: int = 2, num_train: int = 50, threshold: float = 10.0):
-        # CasoCFAR Params
-        self.cfar_type = CfarType.LEADING_EDGE
-        self.num_guard = num_guard
-        self.num_train = num_train
-        self.threshold = threshold
-        self.threshold_is_percentage = False
-
-class CfarType(Enum):
-    CASO = 0,
-    LEADING_EDGE = 1
+from RadarDevKit.RadarModule import GetRadarModule
+from configuration.RunParams import RunParams # type: ignore
+from configuration.PlotConfig import PlotConfig
+from configuration.CFARParams import CFARParams
         
-class RunParams():
-    def __init__(self, cfar_params: CFARParams):
-        # Settings to let the program run from recorded data should be recorded, or read from a preexisting location
-        self.recordedDataFolder= "test_data"
-        self.runType = RunType.LIVE
-        self.recordedDataFormat = RunDataFormat.FD_CUSTOM
-        
-        if (self.runType == RunType.LIVE_RECORD):
-          print("Data will be recorded.")
-        
-        if(self.recordedDataFormat == RunDataFormat.SENTOOL_FD and not self.runType == RunType.RERUN):
-            exit("You cannot use the SENTOOL_FD format for a live data run, since this program cannot record data in that format.")
-        
-        self.ramp_type = "UP-Ramp"
-        self.cfar_params = cfar_params
-        # The minimum amount of data that must be kept in memory to window on
-        if(self.cfar_params.cfar_type == CfarType.CASO):
-            self.data_window_size = cfar_params.num_guard + cfar_params.num_train + 1
-        else:
-            self.data_window_size = (2*cfar_params.num_guard) + (2*cfar_params.num_train) + 1
-        
-class PlotConfig():
-    def __init__(self):
-        self.plot_raw_fd_signal = False
-        self.plot_raw_fd_smooth_signal = 0
-        self.raw_fd_signal_to_plot = FDSignalType.I1
-        self.plot_raw_fd_with_threshold_signal = False
-        self.plot_raw_fd_heatmap = True
-        self.plot_fd_detections = False
-
 # Updated configuration for the system parameters of the Radar
 def get_radar_params():
     updatedSysParams = SysParams()
@@ -58,7 +14,6 @@ def get_radar_params():
     updatedSysParams.active_RX_ch = 15
     updatedSysParams.freq_points = 512
     updatedSysParams.FFT_data_type = 1
-    
     return updatedSysParams
 
 # Updated ethernet configuration to connect to the Radar    
@@ -73,10 +28,11 @@ def get_radar_module():
                                 updatedEthernetConfig=get_ethernet_config())
 
 def get_cfar_params():
-    return CFARParams()
+    return CFARParams(num_guard=2, num_train=50, threshold=10.0, threshold_is_percentage=False)
 
 def get_run_params():
     return RunParams(get_cfar_params())
 
 def get_plot_config():
-    return PlotConfig()
+    plotConfig = PlotConfig()
+    return plotConfig
