@@ -1,8 +1,7 @@
 from radarprocessing.FDDataMatrix import FDDataMatrix
-from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from RadarDevKit.ConfigClasses import SysParams
-from config import get_radar_module, get_radar_params, get_ethernet_config, get_run_params
+from config import get_radar_module, get_radar_params, get_run_params
 from config import RunParams
 from constants import SPEED_LIGHT, DIST_BETWEEN_ANTENNAS
 from configuration.RunType import RunType

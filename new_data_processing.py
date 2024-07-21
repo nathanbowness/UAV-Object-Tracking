@@ -1,21 +1,19 @@
 
+import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
-from older_experiments_to_delete.get_all_sensor_data import get_fd_data_from_radar
+
+from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
 from plots.PlotPolarDynamic import PlotPolarDynamic
 from plots.PlottingLiveData import PlottingLiveData
 
 from configuration import RunParams
-from config import RunParams, get_run_params, get_plot_config
-from config import get_radar_module
+from config import RunParams, get_run_params, get_plot_config, get_radar_module
 
-import numpy as np
-
-import matplotlib.pyplot as plt
-
-from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
 from cfar import get_range_bin_for_indexs
 from radarprocessing.FDDataMatrix import FDSignalType
 from radarprocessing.RadarDataWindow import RadarDataWindow
+from radarprocessing.get_all_sensor_data import get_fd_data_from_radar
 from configuration.RunType import RunType
 
 plotts = PlotDetectionsDynamic(bin_size=0.27, plot_titles=["Rx1 Detections", "Rx2 Detections"], max_steps=50, interval=50, max_bins=20)
@@ -42,6 +40,11 @@ def object_tracking(latest_detection_data, raw_records):
     
     plotts.update_data([detectionsRx1, detectionsRx2])
     polarPlot.update_data(detectionsDistanceArray, detectionsAngle, clear=True)
+    
+    # Conver the angles to radians, so we can then get the x, y coordinates
+    angles_in_radians = np.radians(detectionsAngle)
+    x_coord_detections = detectionsDistanceArray * np.cos(angles_in_radians)
+    y_coord_detections = detectionsDistanceArray * np.sin(angles_in_radians)
     
     plt.pause(0.1)  # Allow time for GUI to update
 
