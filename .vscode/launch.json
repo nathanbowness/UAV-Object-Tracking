@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Real-Time Radar Processing",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/new_data_processing.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
@@ -20,62 +27,6 @@
             "stopOnEntry": false,
             "program": "${file}",
             "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "Python: Get All Sensor Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/get_all_sensor_data.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Real-Time Radar Processing",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/new_data_processing.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Object Tracking Tests",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/object_tracking_tests.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Main",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/main.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Collect Radar Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/collect_data.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Radar Plot Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/plot_captured_radar_data.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Get Time Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/Python38_Example_Codes/TimeData_Collection.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: FD Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/Python38_Example_Codes/FrequencyDomain_Collection.py",
-            "console": "integratedTerminal"
         }
     ]
 }
