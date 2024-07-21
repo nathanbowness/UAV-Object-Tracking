@@ -41,30 +41,31 @@ class RadarDataWindow():
         # Cfar params
         self.cfar_params = cfar_params
         self.index_to_eval = cfar_params.num_train + cfar_params.num_guard
-        self.required_cells_cfar = cfar_required_cells(cfar_params) + 5
+        self.required_cells_cfar = cfar_required_cells(cfar_params)
 
     def remove_old_records(self):
-        current_time = pd.Timestamp.now()
+        # Remove records based on capacity if capacity is specified
+        if self.capacity and len(self.raw_records) == self.capacity:
+            self.timestamps.popleft()
+            self.raw_records.popleft()
+            self.detection_records.popleft()
         
         # Remove records based on time window if duration is specified
-        if self.duration:
+        elif self.duration:
+            current_time = pd.Timestamp.now().replace(microsecond=0)
             while self.timestamps and (current_time - self.timestamps[0] > self.duration):
                 self.timestamps.popleft()
                 self.raw_records.popleft()
                 self.detection_records.popleft()
-        # Remove records based on capacity if capacity is specified
-        elif self.capacity and len(self.raw_records) == self.capacity:
-            self.timestamps.popleft()
-            self.raw_records.popleft()
-            self.detection_records.popleft()
     
     def add_raw_record(self, record : FDDataMatrix):
         """
         Add a record to the deque.
         Ensure the deque doesn't exceed the capacity set
         """
-        self.timestamps.append(record.timestamp)
+        self.timestamps.append(record.timestamp.replace(microsecond=0))
         self.raw_records.append(record.fd_data)
+        self.remove_old_records()
         
     def calculate_detections(self, record_timestamp: pd.Timestamp):
         detection_data = self.process_new_data()

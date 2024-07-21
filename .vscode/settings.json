@@ -2,6 +2,7 @@
     "python.analysis.extraPaths": [
         "./radarprocessing",
         "./configuration",
-        "./plots"
+        "./plots",
+        "./tracking"
     ]
 }
