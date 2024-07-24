@@ -21,7 +21,7 @@ class RunParams():
         self.ramp_type = "UP-Ramp"
         self.cfar_params = cfar_params
         # The minimum amount of data that must be kept in memory to window on
-        if(self.cfar_params.cfar_type == CfarType.CASO):
-            self.data_window_size = cfar_params.num_guard + cfar_params.num_train + 1
+        if(self.cfar_params.cfar_type == CfarType.LEADING_EDGE):
+            self.data_window_size = cfar_params.num_guard + cfar_params.num_train + 1 + 1 # 1 more to have 1 extra
         else:
-            self.data_window_size = (2*cfar_params.num_guard) + (2*cfar_params.num_train) + 1
+            self.data_window_size = (2*cfar_params.num_guard) + (2*cfar_params.num_train) + 1 + 1 # 1 more to have 1 extra

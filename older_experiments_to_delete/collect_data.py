@@ -1,7 +1,7 @@
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from RadarDevKit.ConfigClasses import SysParams
 from config import get_radar_params, get_ethernet_config
-from constants import SAVED_CSV_FILE_NAME
+from older_contstants import SAVED_CSV_FILE_NAME
 import time
 
 import numpy as np
