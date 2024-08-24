@@ -14,10 +14,11 @@ Currently in progress. But this project's goal is to create software that can be
 
 # Usage:
 ```
+export PYTHONPATH="$PYTHONPATH:/workspaces/UAV-Object-Tracking/yolo_video_object_tracking"
+python3 object_tracking.py --weights yolo_video_object_tracking/yolov7.pt --source yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --view-img
+
 python object_tracking.py --radar-only
-
 python object_tracking.py --video-only
-
 python object_tracking.py --show-plots
 ```
 

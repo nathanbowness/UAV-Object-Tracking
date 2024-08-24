@@ -12,6 +12,30 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Object Tracking Program",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/object_tracking.py",
+            "console": "integratedTerminal",
+            "args": "--weights ${workspaceFolder}/yolo_video_object_tracking/yolov7.pt --source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --view-img"
+        },
+        {
+            "name": "Yolo Object Detection - Video M0101",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/yolo_video_object_tracking/detect.py",
+            "console": "integratedTerminal",
+            "args": "--weights ${workspaceFolder}/yolo_video_object_tracking/yolov7.pt --source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --view-img"
+        },
+        {
+            "name": "Yolo Object Detect and Track - Video M0101",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/yolo_video_object_tracking/detect.py",
+            "console": "integratedTerminal",
+            "args": "--weights ${workspaceFolder}/yolo_video_object_tracking/yolov7.pt --source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --view-img"
+        },
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",

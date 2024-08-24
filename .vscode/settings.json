@@ -3,6 +3,7 @@
         "./radarprocessing",
         "./configuration",
         "./plots",
-        "./tracking"
+        "./tracking",
+        "./yolo_video_object_tracking"
     ]
 }

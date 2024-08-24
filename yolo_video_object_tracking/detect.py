@@ -7,6 +7,7 @@ import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
 from random import randint
+
 from models.experimental import attempt_load
 from utils.datasets import LoadStreams, LoadImages
 from utils.general import check_img_size, check_requirements, \
@@ -19,6 +20,7 @@ from utils.download_weights import download
 
 # Added location tracking code
 from custom_object_location import object_location
+import multiprocessing as mp
 
 #............................... Object Location of BB ............................
 """Function to get the location of the object"""
@@ -34,7 +36,7 @@ def get_object_location(xyxy, obj, shouldLog=False,):
     return location_vec
 
 #..............................................................................
-def detect(save_img=False):
+def detect(opt, save_img=False, data_queue : mp.Queue = None):
     source, weights, view_img, save_txt, imgsz, trace,blur = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace,opt.blur
     save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
@@ -115,7 +117,8 @@ def detect(save_img=False):
         if classify:
             pred = apply_classifier(pred, modelc, img, im0s)
 
-        # Process detections
+        # Process detections and return data
+        detections_to_return = []
         for i, det in enumerate(pred):  # detections per image
             if webcam:  # batch_size >= 1
                 p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), dataset.count
@@ -157,6 +160,14 @@ def detect(save_img=False):
                     location_vec = get_object_location(xyxy, iden_obj, shouldLog=True)
                     label = f'{iden_obj} {conf:.2f}, dist: {location_vec[2]:.2f}m, Az Angle: {location_vec[0]:.2f}deg'
                     
+                    # Add a map with object settings to detections_to_return
+                    detections_to_return.append({
+                        'object': iden_obj,
+                        'distance': location_vec[2],
+                        'azAngle': location_vec[0],
+                        'elAngle': location_vec[1]
+                    })
+                    
                     if save_img or view_img:  # Add bbox to image
                         # label = f'{names[int(cls)]}, Conf: {conf:.2f}'
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=1)
@@ -164,6 +175,8 @@ def detect(save_img=False):
             # Print time (inference + NMS)
             print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
             print()
+            
+            data_queue.put(detections_to_return)
 
             # Stream results
             if view_img:
@@ -198,6 +211,8 @@ def detect(save_img=False):
                             save_path += '.mp4'
                         vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer.write(im0)
+                    
+    
 
     if save_txt or save_img:
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
@@ -241,7 +256,7 @@ if __name__ == '__main__':
     with torch.no_grad():
         if opt.update:  # update all models (to fix SourceChangeWarning)
             for opt.weights in ['yolov7.pt']:
-                detect()
+                detect(opt)
                 strip_optimizer(opt.weights)
         else:
-            detect()
+            detect(opt)
