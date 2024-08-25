@@ -9,7 +9,7 @@ from configuration.CFARParams import CFARParams
 def get_radar_params():
     updatedSysParams = SysParams()
     updatedSysParams.minFreq = 24000
-    updatedSysParams.manualBW = 600
+    updatedSysParams.manualBW = 700
     updatedSysParams.t_ramp = 7
     updatedSysParams.active_RX_ch = 15
     updatedSysParams.freq_points = 512
