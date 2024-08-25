@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import random
 
+# Must be imported last, to ensure it can dynamically be shown
+import matplotlib
+matplotlib.use('TkAgg')
+
 class PlotPolarDynamic:
     def __init__(self, max_points=500, interval=1000, min_angle=-70, max_angle=70, max_distance=100, angle_unit='degrees'):
         self.max_points = max_points
-        self.interval = interval
-        self.min_angle = min_angle
-        self.max_angle = max_angle
         self.max_distance = max_distance
         self.angle_unit = angle_unit  # 'degrees' or 'radians'
         
@@ -34,6 +35,7 @@ class PlotPolarDynamic:
         self.anim = FuncAnimation(self.fig, self.update_plot, init_func=self.init_plot, interval=interval, blit=True, cache_frame_data=False)
         
         # Show the plot
+        plt.ion()
         plt.show(block=False)
 
     def generate_random_color(self):

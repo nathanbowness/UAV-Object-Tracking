@@ -157,15 +157,15 @@ def detect(opt, save_img=False, data_queue : mp.Queue = None):
 
                     # Custom
                     iden_obj = names[int(cls)]
-                    location_vec = get_object_location(xyxy, iden_obj, shouldLog=True)
+                    location_vec = get_object_location(xyxy, iden_obj, shouldLog=False)
                     label = f'{iden_obj} {conf:.2f}, dist: {location_vec[2]:.2f}m, Az Angle: {location_vec[0]:.2f}deg'
                     
                     # Add a map with object settings to detections_to_return
                     detections_to_return.append({
                         'object': iden_obj,
                         'distance': location_vec[2],
-                        'azAngle': location_vec[0],
-                        'elAngle': location_vec[1]
+                        'angle': location_vec[0],
+                        # 'elAngle': location_vec[1]
                     })
                     
                     if save_img or view_img:  # Add bbox to image
@@ -176,7 +176,8 @@ def detect(opt, save_img=False, data_queue : mp.Queue = None):
             print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
             print()
             
-            data_queue.put(detections_to_return)
+            if data_queue is not None:
+                data_queue.put(detections_to_return)
 
             # Stream results
             if view_img:
