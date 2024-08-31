@@ -7,10 +7,10 @@ from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
 from plots.PlotPolarDynamic import PlotPolarDynamic
 from plots.PlottingLiveData import PlottingLiveData
 
-from configuration import RunParams
-from config import RunParams, get_run_params, get_plot_config, get_radar_module
+from radar_object_tracking.configuration import RadarRunParams
+from config import RadarRunParams, get_run_params, get_plot_config, get_radar_module
 
-from cfar import get_range_bin_for_indexs
+from radar_object_tracking.cfar import get_range_bin_for_indexs
 from radarprocessing.FDDataMatrix import FDSignalType
 from radarprocessing.RadarDataWindow import RadarDataWindow
 from radarprocessing.get_all_sensor_data import get_fd_data_from_radar
@@ -55,7 +55,7 @@ def handle_object_tracking(object_tracking, latest_detection_data, raw_records, 
     
     plt.pause(0.1)  # Allow time for GUI to update
 
-def data_processing(run_params: RunParams, radar_window : RadarDataWindow, object_tracking: ObjectTrackingExtendedObjectGNN, plotting_live: PlottingLiveData):
+def data_processing(run_params: RadarRunParams, radar_window : RadarDataWindow, object_tracking: ObjectTrackingExtendedObjectGNN, plotting_live: PlottingLiveData):
     radar_module = get_radar_module()
     
     # Infinite loop

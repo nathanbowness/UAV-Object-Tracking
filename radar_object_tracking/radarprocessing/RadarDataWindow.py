@@ -1,8 +1,8 @@
 from collections import deque
-from cfar import cfar_single, cfar_required_cells
+from radar_object_tracking.cfar import cfar_single, cfar_required_cells
 from constants import SPEED_LIGHT
-from radarprocessing.FDDataMatrix import FDDataMatrix, FDSignalType
-from config import RunParams, CFARParams
+from radar_object_tracking.radarprocessing.FDDataMatrix import FDDataMatrix, FDSignalType
+from config import RadarRunParams, CFARParams
 
 import numpy as np
 import pandas as pd
@@ -14,7 +14,6 @@ from .FDDetectionMatrix import FDDetectionMatrix
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 class StoredData():
     def __init__(self, raw_data: FDDataMatrix, relativeTime: int, detection_data: FDDetectionMatrix):

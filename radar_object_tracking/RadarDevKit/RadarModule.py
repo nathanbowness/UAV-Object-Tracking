@@ -1,12 +1,12 @@
 # Main classes for the Ethernet interface
-from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
-from RadarDevKit.Interfaces.Ethernet.IPConnection import IPConnection
-from RadarDevKit.Interfaces.Ethernet.Commands import IPCommands
+from radar_object_tracking.RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
+from radar_object_tracking.RadarDevKit.Interfaces.Ethernet.IPConnection import IPConnection
+from radar_object_tracking.RadarDevKit.Interfaces.Ethernet.Commands import IPCommands
 
-from RadarDevKit.ConfigClasses import SysParams
+from radar_object_tracking.RadarDevKit.ConfigClasses import SysParams
 
 # Parameter and data classes
-import RadarDevKit.ConfigClasses as cfgCl
+import radar_object_tracking.RadarDevKit.ConfigClasses as cfgCl
 
 '''
 This example class has functions

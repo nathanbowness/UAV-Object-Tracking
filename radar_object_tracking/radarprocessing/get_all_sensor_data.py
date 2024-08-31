@@ -2,13 +2,13 @@ from radarprocessing.FDDataMatrix import FDDataMatrix
 from RadarDevKit.RadarModule import RadarModule, GetRadarModule
 from RadarDevKit.ConfigClasses import SysParams
 from config import get_radar_module, get_radar_params, get_run_params
-from config import RunParams
+from config import RadarRunParams
 from constants import SPEED_LIGHT, DIST_BETWEEN_ANTENNAS
 from configuration.RunType import RunType
 
 import numpy as np
 
-def get_td_data_voltage(run_params: RunParams, 
+def get_td_data_voltage(run_params: RadarRunParams, 
                  radar_module: RadarModule):
     """
     Get the TD in units of Voltage.
@@ -36,7 +36,7 @@ def get_td_data_voltage(run_params: RunParams,
     print(td_data_voltage.shape)
     return td_data_voltage
 
-def get_td_data_voltage_T(run_params: RunParams, 
+def get_td_data_voltage_T(run_params: RadarRunParams, 
                  radar_module: RadarModule):
     """
     Get the TD in units of Voltage.
@@ -235,7 +235,7 @@ def get_FD_data_phase_data(radarModule: RadarModule, radarParams: SysParams) -> 
     # Create the FDDataMatrix of measured data with a timestamp - [512, 7] => [I1, Q1, I2, Q2, Rx1 Phase, Rx2 Phase, Estimated View Angle]
     return FDDataMatrix(np.hstack((fd_data, phase_data)))
 
-def get_fd_data_with_angles_from_radar(run_params: RunParams, 
+def get_fd_data_with_angles_from_radar(run_params: RadarRunParams, 
                            radar_module: RadarModule,
                            radar_sys_params: SysParams = get_radar_params()):
     # Collect data
@@ -248,7 +248,7 @@ def get_fd_data_with_angles_from_radar(run_params: RunParams,
     
     return fd_data
 
-def get_fd_data_from_radar(run_params: RunParams, 
+def get_fd_data_from_radar(run_params: RadarRunParams, 
                            radar_module: RadarModule,
                            radar_sys_params: SysParams = get_radar_params()) -> FDDataMatrix:
     # Collect data
