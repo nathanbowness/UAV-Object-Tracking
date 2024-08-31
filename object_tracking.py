@@ -6,21 +6,26 @@ import torch
 import matplotlib.pyplot as plt
 
 # Different tracking programs
-from radar_object_tracking.radar_tracking import radar_object_tracking
+from radar_object_tracking.configuration.CFARParams import CFARParams
+from radar_object_tracking.configuration.RadarRunParams import RadarRunParams
+from radar_object_tracking.radar_tracking import RadarTracking
 from yolo_video_object_tracking.detect import detect
 
 from plots.PlotPolarDynamic import PlotPolarDynamic
 
-def radar_tracking_task(stop_event, radar_data_queue : mp.Queue):
-    while not stop_event.is_set():
-        result = radar_object_tracking()
-        radar_data_queue.put(result)  # Put the result into the queue
-        time.sleep(0.1)  # Add a delay to avoid busy-waiting
+def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue):
+   
+    cfar_params = CFARParams(num_guard=2, num_train=50, threshold=10.0, threshold_is_percentage=False)
+    radar_params = RadarRunParams(args, cfar_params)
+    radar_tracking = RadarTracking(radar_params, radar_data_queue)
+
+    radar_tracking.object_tracking(stop_event)
+    time.sleep(0.1)  # Add a delay to avoid busy-waiting
         
-def process_queues(image_data_queue, radar_data_queue, plot_data_queue, stop_event):  
+def process_queues(image_data_queue, radar_data_queue, plot_data_queue, stop_event):
     while not stop_event.is_set():
         # Handle image data queue
-        while not image_data_queue.empty():
+        while image_data_queue is not None and not image_data_queue.empty():
             try:
                 data = image_data_queue.get(timeout=1)  # Add timeout to avoid blocking
                 
@@ -34,7 +39,7 @@ def process_queues(image_data_queue, radar_data_queue, plot_data_queue, stop_eve
                 pass
 
         # Handle radar data queue
-        while not radar_data_queue.empty():
+        while radar_data_queue is not None and not radar_data_queue.empty():
             try:
                 data = radar_data_queue.get(timeout=1)  # Add timeout to avoid blocking
                 print(f"Received radar data: {data}")
@@ -46,12 +51,20 @@ def plot_data(plot_queue: mp.Queue, stop_event):
     polarPlot = PlotPolarDynamic(min_angle=-90, max_angle=90, max_distance=40, interval=50)
 
     while not stop_event.is_set():
-        while not plot_queue.empty():
+        while radar_data_queue is not None and not plot_queue.empty():
             try:
                 plot_data = plot_queue.get(timeout=1)
                 distances, angles = plot_data["dist"], plot_data["angles"]
                 polarPlot.update_data(distances, angles, clear=True)
                 plt.pause(0.1)
+                
+                # Convert the angles to radians, so we can then get the x, y coordinates
+                angles_in_radians = np.radians(angles)
+                x_coord_detections = distances * np.cos(angles_in_radians)
+                y_coord_detections = distances * np.sin(angles_in_radians)
+                x_vel = np.full(x_coord_detections.shape, 1)
+                y_vel = np.full(y_coord_detections.shape, 1)
+                
             except mp.queues.Empty:
                 pass
     
@@ -80,32 +93,45 @@ if __name__ == '__main__':
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
     parser.add_argument('--blur', action='store_true', help='blur detections')
+    
+    # Options added by me
+    parser.add_argument('--skip-video', action='store_true', help='skip video tracking')
+    parser.add_argument('--skip-radar', action='store_true', help='skip radar tracking')
+    parser.add_argument('--enable-plot', action='store_true', help='enable plotting')
+    parser.add_argument('--radar-from-file', action='store_true', help='use radar data from file')
+    parser.add_argument('--radar-source', type=str, default='data/radar', help='source folder to pull the radar data from. Only used if "radar-from-file" is set')
     parser.set_defaults(download=True)
     args = parser.parse_args()
     opt = parser.parse_args()
     
     # Create a stop event and a queue for radar_data
     stop_event = mp.Event()
-    radar_data_queue = mp.Queue()
-    image_data_queue = mp.Queue()
-    plot_data_queue = mp.Queue()
+    radar_data_queue = None
+    image_data_queue = None
+    plot_data_queue = None
     
     # Create the radar tracking process
-    process1 = mp.Process(target=radar_tracking_task, args=(stop_event, radar_data_queue))
-    process1.start()
-    
-    # Create the video tracking process
-    with torch.no_grad():
-        video_proc = mp.Process(target=detect, args=(opt, False, image_data_queue))
-        video_proc.start()
+    if not args.skip_radar:
+        radar_data_queue = mp.Queue()
+        radar_proc = mp.Process(target=radar_tracking_task, args=(stop_event, args, radar_data_queue))
+        radar_proc.start()
+        
+    if not args.skip_video:
+        image_data_queue = mp.Queue()
+        # Create the video tracking process if it's not skipped
+        with torch.no_grad():
+            video_proc = mp.Process(target=detect, args=(opt, False, image_data_queue))
+            video_proc.start()
     
     # Queue process to handle incoming data
-    queue_proc = mp.Process(target=process_queues, args=(image_data_queue, radar_data_queue, plot_data_queue, stop_event))
-    queue_proc.start()
+    tracking_proc = mp.Process(target=process_queues, args=(image_data_queue, radar_data_queue, plot_data_queue, stop_event))
+    tracking_proc.start()
     
     # plotting process
-    plot_process = mp.Process(target=plot_data, args=(plot_data_queue, stop_event))
-    plot_process.start()
+    if args.enable_plot:
+        plot_data_queue = mp.Queue()
+        plot_process = mp.Process(target=plot_data, args=(plot_data_queue, stop_event))
+        plot_process.start()
     
     try:
         while True:
@@ -116,9 +142,13 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         stop_event.set()
     finally:
-        process1.join()
-        video_proc.join()
-        queue_proc.join()
-        plot_process.join()
+        if not args.skip_radar:
+            radar_proc.join()
+        if not args.skip_video:
+            video_proc.join()
+        if args.enable_plot:
+            plot_process.join()
+            
+        tracking_proc.join()
 
     print(f"Tracking duration: {time.time() - start_time:.2f} seconds")

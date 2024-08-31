@@ -1,4 +1,4 @@
-from radarprocessing.FDDataMatrix import FDSignalType
+from radar_object_tracking.radarprocessing.FDDataMatrix import FDSignalType
 
 class PlotConfig():
     def __init__(self):

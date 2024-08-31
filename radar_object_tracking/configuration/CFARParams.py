@@ -1,4 +1,4 @@
-from configuration.CFARType import CfarType
+from radar_object_tracking.configuration.CFARType import CfarType
 
 class CFARParams():    
     def __init__(self, num_guard: int = 2, num_train: int = 50, threshold: float = 10.0, threshold_is_percentage: bool = False):

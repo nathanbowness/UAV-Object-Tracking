@@ -169,3 +169,6 @@ stonesoup_tutorials/*
 
 # Test videos
 *.mp4
+
+# Ignore all data samples
+data/

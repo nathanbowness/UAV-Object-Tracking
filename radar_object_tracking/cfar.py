@@ -1,8 +1,8 @@
 import numpy as np
 
 from config import get_cfar_params
-from configuration.CFARType import CfarType
-from configuration.CFARParams import CFARParams
+from radar_object_tracking.configuration.CFARType import CfarType
+from radar_object_tracking.configuration.CFARParams import CFARParams
     
 def cfar_required_cells(cfar_params: CFARParams = get_cfar_params()):
     if cfar_params.cfar_type == CfarType.CASO:

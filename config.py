@@ -1,9 +1,9 @@
-from RadarDevKit.ConfigClasses import SysParams
-from RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
-from RadarDevKit.RadarModule import GetRadarModule
-from configuration.RunParams import RunParams # type: ignore
-from configuration.PlotConfig import PlotConfig
-from configuration.CFARParams import CFARParams
+from radar_object_tracking.RadarDevKit.ConfigClasses import SysParams
+from radar_object_tracking.RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
+from radar_object_tracking.RadarDevKit.RadarModule import GetRadarModule
+from radar_object_tracking.configuration.RadarRunParams import RadarRunParams # type: ignore
+from radar_object_tracking.configuration.PlotConfig import PlotConfig
+from radar_object_tracking.configuration.CFARParams import CFARParams
         
 # Updated configuration for the system parameters of the Radar
 def get_radar_params():
@@ -31,7 +31,7 @@ def get_cfar_params():
     return CFARParams(num_guard=2, num_train=50, threshold=10.0, threshold_is_percentage=False)
 
 def get_run_params():
-    return RunParams(get_cfar_params())
+    return RadarRunParams(get_cfar_params())
 
 def get_plot_config():
     plotConfig = PlotConfig()
