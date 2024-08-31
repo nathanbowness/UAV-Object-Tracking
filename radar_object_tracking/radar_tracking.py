@@ -15,9 +15,9 @@ class RadarTracking():
         self.radar_run_params = radar_run_params
         self.radar_data_queue = radar_data_queue
         
-        tracking_start_time = pd.Timestamp.now().replace(microsecond=0)
-        radar_data_window = RadarDataWindow(cfar_params=self.radar_run_params.cfar_params, 
-                                            start_time=tracking_start_time,
+        self.tracking_start_time = pd.Timestamp.now().replace(microsecond=0)
+        self.radar_window = RadarDataWindow(cfar_params=self.radar_run_params.cfar_params, 
+                                            start_time=self.tracking_start_time,
                                             capacity=self.radar_run_params.data_window_size)
 
     def object_tracking(self, stop_event):
@@ -51,7 +51,19 @@ class RadarTracking():
         # Process each file one by one
         for file_name in txt_files:
             file_path = os.path.join(directory_to_process, file_name)
-            data = read_columns(file_path)
-            time.sleep(self.radar_run_params.recordedProcessingDelaySec)
+            
             print(f"Processing file: {file_path}")
+            new_fd_data = read_columns(file_path)
+            
+            self.radar_window.add_raw_record(new_fd_data)
+            self.radar_window.calculate_detections(record_timestamp=new_fd_data.timestamp)
+            
+            # Until we have enough records for CFAR or analysis, just continue 
+            if(len(self.radar_window.get_raw_records()) < self.radar_window.required_cells_cfar):
+                continue
+            
+            ### TODO - do some object tracking now!!!!
+            
+            time.sleep(self.radar_run_params.recordedProcessingDelaySec)
+            
     
