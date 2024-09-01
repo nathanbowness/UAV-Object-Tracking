@@ -1,4 +1,53 @@
 import csv
+import numpy as np
+import pandas as pd
+import re
+from datetime import datetime
+
+from config import get_radar_params
+from constants import SPEED_LIGHT, DIST_BETWEEN_ANTENNAS
+from radar_object_tracking.radarprocessing.FDDataMatrix import FDDataMatrix
+
+
+def extract_timestamp_from_filename(filename):
+    # Extract the timestamp part from the filename using regex
+    match = re.search(r'trial_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.\d{3})', filename)
+    if match:
+        timestamp_str = match.group(1)
+        # Replace underscores with spaces to match the format
+        timestamp_str = timestamp_str.replace('_', ' ')
+        # Parse the timestamp string using datetime
+        dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S.%f')
+        # Convert to pd.Timestamp
+        timestamp = pd.Timestamp(dt)
+        return timestamp
+    else:
+        raise ValueError("Filename does not match the expected format")
+
+
+
+def determine_phase_angle(I1_phase: np.array, 
+                          Q1_phase: np.array, 
+                          I2_phase: np.array, 
+                          Q2_phase: np.array):
+    radarParams = get_radar_params()
+    fc = (radarParams.minFreq*(10**6)) + (radarParams.manualBW / 2)*(10**6)
+    
+    phase1 = np.arctan(Q1_phase / I1_phase)
+    phase2 = np.arctan(Q2_phase / I2_phase)
+    
+    phase_differences = I2_phase - I1_phase
+    phase_differences_unwrapped = np.unwrap([phase_differences])[0]
+    
+    sin_alpha = (phase_differences_unwrapped * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS)
+    
+    sin_alpha = np.clip(sin_alpha, -1, 1)
+        
+    alpha = np.arcsin(sin_alpha)
+    alpha_degrees = np.degrees(alpha)  # Convert from radians to degrees
+    
+    # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Phase_Diff, Estimated View Angle [Deg]] (512 x 4)
+    return np.vstack((phase1, phase2, phase_differences_unwrapped, alpha_degrees)).T
 
 def read_columns(file_path):
     columns = {
@@ -12,6 +61,13 @@ def read_columns(file_path):
         '<Phase Q2>': []
     }
     
+    calcs = {
+        'Rx1Phase': [],
+        'Rx2Phase': [],
+        'EstAngle': []
+    }  
+    
+    fd_data_matrix = None
     with open(file_path, 'r') as file:
         # Skip lines until the delimiter line is found
         for line in file:
@@ -27,17 +83,23 @@ def read_columns(file_path):
         for row in reader:
             for col in columns:
                 if col in row:
-                    columns[col].append(row[col])
+                    columns[col].append(float(row[col]))
                 else:
                     print(f"Warning: Column '{col}' not found in row.")
-    
-    return columns
+        
+        phase_angles_calcs = determine_phase_angle(np.array(columns['<Phase I1>']), 
+                                                   np.array(columns['<Phase Q1>']), 
+                                                   np.array(columns['<Phase I2>']),
+                                                   np.array(columns['<Phase Q2>']))
+        mag_data = np.vstack((np.array(columns['<Mag. I1>']), np.array(columns['<Mag. Q1>']), np.array(columns['<Mag. I2>']), np.array(columns['<Mag. Q2>']))).T
+        
+        # Extract timestamp from filename
+        timestamp = extract_timestamp_from_filename(file_path)              
+        fd_data_matrix = FDDataMatrix(np.hstack((mag_data, phase_angles_calcs)), timestamp=timestamp)
+    return fd_data_matrix
 
 if __name__ == '__main__':
     # Example usage
-    file_path = 'radar_samples/FD/trial_2024-08-14_13-33-18.376.txt'
+    file_path = 'data/radar/FD/trial_2024-08-14_13-33-18.376.txt'
     data = read_columns(file_path)
-
-    # Print the first few entries for each column
-    for col, values in data.items():
-        print(f"{col}: {values[:5]}")
+    print(data)
