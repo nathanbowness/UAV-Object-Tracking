@@ -10,7 +10,7 @@ class RadarRunParams():
         # Default run parameters
         self.runType = RunType.LIVE                        
         self.recordedDataFolder= None
-        self.recordedProcessingDelaySec = 0.1
+        self.recordedProcessingDelaySec = 0
         self.recordedDataFormat = RunDataFormat.FD_CUSTOM
         self.ramp_type = "UP-Ramp"
         self.cfar_params = cfar_params

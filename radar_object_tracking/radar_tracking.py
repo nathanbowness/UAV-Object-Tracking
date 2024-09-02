@@ -1,12 +1,14 @@
 import os
-import random
 import time
 import pandas as pd
+import numpy as np
 
 import multiprocessing as mp
 
+from radar_object_tracking.cfar import get_range_bin_for_indexs
 from radar_object_tracking.configuration.RunType import RunType
 from radar_object_tracking.configuration.RadarRunParams import RadarRunParams
+from radar_object_tracking.radarprocessing.FDDataMatrix import FDSignalType
 from radar_object_tracking.radarprocessing.RadarDataWindow import RadarDataWindow
 from radar_object_tracking.radarprocessing.radar_fd_textdata_parser import read_columns
 
@@ -24,7 +26,7 @@ class RadarTracking():
         
         # If this is a rerun, read the data from the folder until it's completed
         if self.radar_run_params.runType == RunType.RERUN:
-                # Read the data from the file
+            # Read the data from the file
             print(f"Run radar tracking on data in folder: {self.radar_run_params.recordedDataFolder}")
             self.process_data_from_folder()
 
@@ -34,7 +36,44 @@ class RadarTracking():
             while not stop_event.is_set():
                 print("LIVE - radar tracking")
         
-        self.radar_data_queue.put("I finished processing.")  # Put the result into the queue
+        self.radar_data_queue.put("DONE")  # Put the result into the queue
+
+    def handle_object_tracking(self):
+        latest_detection_data = self.radar_window.detection_records[-1] # (512, 8)
+        raw_records = self.radar_window.raw_records[-1] # (513, 8)
+        timestamp = self.radar_window.timestamps[-1]
+        
+        # TODO -- ensure the algorithm, and masking for this is correct... Seems like something might be off
+        
+        detectionsRx1 = np.logical_or(latest_detection_data[:,FDSignalType.I1.value*2], latest_detection_data[:,FDSignalType.Q1.value*2]).astype(int)
+        detectionsRx2 = np.logical_or(latest_detection_data[:,FDSignalType.I2.value*2], latest_detection_data[:,FDSignalType.Q2.value*2]).astype(int)
+
+        # Mask any detections that have an angle of -90 or 90 -- not valid objects, or out of frame.
+        angles = raw_records[1:,FDSignalType.VIEW_ANGLE.value] # Skip the first record, since it's length 513
+        angles_mask = np.where((angles == 90) | (angles == -90))
+        detectionsRx1[angles_mask] = 0
+        detectionsRx2[angles_mask] = 0
+        
+        # Get the total detections now after the masking, and their indexes
+        detectionsTotal = np.logical_or(detectionsRx1, detectionsRx2).astype(int)
+        detectionIndexes = np.where(detectionsTotal == 1)[0]
+        
+        # Get the actual detections to plot
+        detectionsDistanceArray = get_range_bin_for_indexs(detectionIndexes, 0.199861)
+        detectionsAngleDeg = raw_records[:,FDSignalType.VIEW_ANGLE.value][detectionIndexes]
+        
+        if len(detectionsAngleDeg) > 0 and (len(detectionsDistanceArray) == len(detectionsAngleDeg)):
+            # Convert angles from degrees to radians
+            detectionsAngleRad = np.radians(detectionsAngleDeg)
+
+            # Calculate x and y coordinates
+            x_coords = detectionsDistanceArray * np.cos(detectionsAngleRad)
+            y_coords = detectionsDistanceArray * np.sin(detectionsAngleRad)
+            array_data = [{'x': x, 'y': y, 'x_v': '1', 'y_v':'1'} for x, y in zip(x_coords, y_coords)]
+            detections = {'time': timestamp, 'type': 'radar', 'data': array_data}
+            
+            # Send data to the radar_queue --- {'x', 'y', 'type', 'time'}
+            self.radar_data_queue.put(detections)
         
     def process_data_from_folder(self):
         directory_to_process = self.radar_run_params.recordedDataFolder
@@ -52,7 +91,7 @@ class RadarTracking():
         for file_name in txt_files:
             file_path = os.path.join(directory_to_process, file_name)
             
-            print(f"Processing file: {file_path}")
+            # print(f"Processing file: {file_path}")
             new_fd_data = read_columns(file_path)
             
             self.radar_window.add_raw_record(new_fd_data)
@@ -62,7 +101,7 @@ class RadarTracking():
             if(len(self.radar_window.get_raw_records()) < self.radar_window.required_cells_cfar):
                 continue
             
-            ### TODO - do some object tracking now!!!!
+            self.handle_object_tracking()
             
             time.sleep(self.radar_run_params.recordedProcessingDelaySec)
             

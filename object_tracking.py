@@ -4,8 +4,10 @@ import multiprocessing as mp
 import time
 import torch
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 # Different tracking programs
+from tracking.ObjectTracking import ObjectTrackingExtendedObjectGNN
 from radar_object_tracking.configuration.CFARParams import CFARParams
 from radar_object_tracking.configuration.RadarRunParams import RadarRunParams
 from radar_object_tracking.radar_tracking import RadarTracking
@@ -15,14 +17,17 @@ from plots.PlotPolarDynamic import PlotPolarDynamic
 
 def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue):
    
-    cfar_params = CFARParams(num_guard=2, num_train=50, threshold=10.0, threshold_is_percentage=False)
+    cfar_params = CFARParams(num_guard=2, num_train=12, threshold=10, threshold_is_percentage=False)
     radar_params = RadarRunParams(args, cfar_params)
     radar_tracking = RadarTracking(radar_params, radar_data_queue)
 
     radar_tracking.object_tracking(stop_event)
     time.sleep(0.1)  # Add a delay to avoid busy-waiting
         
-def process_queues(image_data_queue, radar_data_queue, plot_data_queue, stop_event):
+def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_queue = None):
+    
+    tracking = ObjectTrackingExtendedObjectGNN(time.time())
+    
     while not stop_event.is_set():
         # Handle image data queue
         while image_data_queue is not None and not image_data_queue.empty():
@@ -41,17 +46,45 @@ def process_queues(image_data_queue, radar_data_queue, plot_data_queue, stop_eve
         # Handle radar data queue
         while radar_data_queue is not None and not radar_data_queue.empty():
             try:
-                data = radar_data_queue.get(timeout=1)  # Add timeout to avoid blocking
-                print(f"Received radar data: {data}")
-                # Process the data as needed
+                detections_raw = radar_data_queue.get(timeout=1)  # Add timeout to avoid blocking
+                # print(f"Received radar data: {detections_raw}")
+                
+                if (detections_raw == "DONE"):
+                    print("Radar data processing is done.")
+                    tracking.show_tracks_plot()
+                    break
+                
+                # Extract the array data and time from the detections dictionary
+                array_data = detections_raw['data']
+                timestamp = detections_raw['time']
+                
+                # Convert array_data to a numpy array
+                detection_array = np.array([[float(d['x']), float(d['x_v']), float(d['y']), float(d['y_v'])] for d in array_data])
+                
+                # Convert time_str to datetime object using the provided format                   
+                # timestamp = datetime.strptime(time_str, '%Y-%m-%d %H-%M-%S')
+                
+                tracking.update_tracks(detection_array, timestamp)
+                
+                if (len(tracking.timesteps) % 50 == 0):
+                    tracking.show_tracks_plot()
+                
+                # Print this data here......
+                if plot_data_queue is not None:
+                    plot_data_queue.put({"dist": data[:, 0], "angles": data[:, 1]})
+                
+                
             except mp.queues.Empty:
+                pass
+            except Exception as e:
+                print(f"Error processing radar data: {e}")
                 pass
             
 def plot_data(plot_queue: mp.Queue, stop_event):
     polarPlot = PlotPolarDynamic(min_angle=-90, max_angle=90, max_distance=40, interval=50)
 
     while not stop_event.is_set():
-        while radar_data_queue is not None and not plot_queue.empty():
+        while plot_queue is not None and not plot_queue.empty():
             try:
                 plot_data = plot_queue.get(timeout=1)
                 distances, angles = plot_data["dist"], plot_data["angles"]
@@ -122,16 +155,16 @@ if __name__ == '__main__':
         with torch.no_grad():
             video_proc = mp.Process(target=detect, args=(opt, False, image_data_queue))
             video_proc.start()
-    
-    # Queue process to handle incoming data
-    tracking_proc = mp.Process(target=process_queues, args=(image_data_queue, radar_data_queue, plot_data_queue, stop_event))
-    tracking_proc.start()
-    
+            
     # plotting process
     if args.enable_plot:
         plot_data_queue = mp.Queue()
         plot_process = mp.Process(target=plot_data, args=(plot_data_queue, stop_event))
         plot_process.start()
+    
+    # Queue process to handle incoming data
+    tracking_proc = mp.Process(target=process_queues, args=(stop_event, image_data_queue, radar_data_queue, plot_data_queue))
+    tracking_proc.start()
     
     try:
         while True:
