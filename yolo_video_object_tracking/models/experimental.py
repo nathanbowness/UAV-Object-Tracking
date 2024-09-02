@@ -3,8 +3,8 @@ import random
 import torch
 import torch.nn as nn
 
-from models.common import Conv, DWConv
-from utils.google_utils import attempt_download
+from yolo_video_object_tracking.models.common import Conv, DWConv
+from yolo_video_object_tracking.utils.google_utils import attempt_download
 
 
 class CrossConv(nn.Module):

@@ -28,7 +28,7 @@ def get_radar_module():
                                 updatedEthernetConfig=get_ethernet_config())
 
 def get_cfar_params():
-    return CFARParams(num_guard=2, num_train=50, threshold=10.0, threshold_is_percentage=False)
+    return CFARParams(num_guard=2, num_train=10, threshold=10.0, threshold_is_percentage=False)
 
 def get_run_params():
     return RadarRunParams(get_cfar_params())

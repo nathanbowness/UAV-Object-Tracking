@@ -10,7 +10,7 @@ from radar_object_tracking.radarprocessing.FDDataMatrix import FDDataMatrix
 
 
 def extract_timestamp_from_filename(filename):
-    # Extract the timestamp part from the filename using regex
+    # Try to extract the timestamp part from the filename using regex with milliseconds
     match = re.search(r'trial_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.\d{3})', filename)
     if match:
         timestamp_str = match.group(1)
@@ -18,11 +18,21 @@ def extract_timestamp_from_filename(filename):
         timestamp_str = timestamp_str.replace('_', ' ')
         # Parse the timestamp string using datetime
         dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S.%f')
-        # Convert to pd.Timestamp
-        timestamp = pd.Timestamp(dt)
-        return timestamp
     else:
-        raise ValueError("Filename does not match the expected format")
+        # Try to extract the timestamp part from the filename using regex without milliseconds
+        match = re.search(r'trial_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', filename)
+        if match:
+            timestamp_str = match.group(1)
+            # Replace underscores with spaces to match the format
+            timestamp_str = timestamp_str.replace('_', ' ')
+            # Parse the timestamp string using datetime
+            dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S')
+        else:
+            raise ValueError(f"Filename does not match the expected format: {filename}")
+    
+    # Convert to pd.Timestamp
+    timestamp = pd.Timestamp(dt)
+    return timestamp
 
 
 
@@ -33,10 +43,13 @@ def determine_phase_angle(I1_phase: np.array,
     radarParams = get_radar_params()
     fc = (radarParams.minFreq*(10**6)) + (radarParams.manualBW / 2)*(10**6)
     
-    phase1 = np.arctan(Q1_phase / I1_phase)
-    phase2 = np.arctan(Q2_phase / I2_phase)
+    epsilon = 2e-10
+    phase1 = np.arctan(Q1_phase / (I1_phase + epsilon))
+    phase2 = np.arctan(Q2_phase / (I2_phase + epsilon))
     
-    phase_differences = I2_phase - I1_phase
+    phase_differences = phase2 - phase1
+    
+    # phase_differences = I2_phase - I1_phase
     phase_differences_unwrapped = np.unwrap([phase_differences])[0]
     
     sin_alpha = (phase_differences_unwrapped * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS)
@@ -78,7 +91,7 @@ def read_columns(file_path):
         reader = csv.DictReader(file, delimiter='\t')
         
         # Print the column names to debug
-        print("Column names in file:", reader.fieldnames)
+        # print("Column names in file:", reader.fieldnames)
         
         for row in reader:
             for col in columns:
@@ -87,10 +100,10 @@ def read_columns(file_path):
                 else:
                     print(f"Warning: Column '{col}' not found in row.")
         
-        phase_angles_calcs = determine_phase_angle(np.array(columns['<Phase I1>']), 
-                                                   np.array(columns['<Phase Q1>']), 
-                                                   np.array(columns['<Phase I2>']),
-                                                   np.array(columns['<Phase Q2>']))
+        phase_angles_calcs = determine_phase_angle(np.radians(np.array(columns['<Phase I1>'])), 
+                                                   np.radians(np.array(columns['<Phase Q1>'])), 
+                                                   np.radians(np.array(columns['<Phase I2>'])),
+                                                   np.radians(np.array(columns['<Phase Q2>'])))
         mag_data = np.vstack((np.array(columns['<Mag. I1>']), np.array(columns['<Mag. Q1>']), np.array(columns['<Mag. I2>']), np.array(columns['<Mag. Q2>']))).T
         
         # Extract timestamp from filename
