@@ -1,11 +1,12 @@
 import numpy as np
+
+import matplotlib
+matplotlib.use('Qt5Agg')  # Use Qt5Agg backend for GUI support
 import matplotlib.pyplot as plt
+plt.ion()
 from matplotlib.animation import FuncAnimation
 
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-
 from radar_object_tracking.cfar import get_range_bins
 
 class PlotDetectionsDynamic:
@@ -40,6 +41,7 @@ class PlotDetectionsDynamic:
         # Initialize the animation
         self.anim = FuncAnimation(self.fig, self.update_plot, init_func=self.init_plot, interval=interval, blit=True, cache_frame_data=True)
         plt.show(block=False)
+        plt.ion()
 
     def init_plot(self):
         for scatter in self.scatters:

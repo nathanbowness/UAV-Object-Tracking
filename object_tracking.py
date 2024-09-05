@@ -3,7 +3,16 @@ import numpy as np
 import multiprocessing as mp
 import time
 import torch
+import tkinter
+
+from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
+
+from plots.PlotPolarDynamic import PlotPolarDynamic
+import matplotlib
+matplotlib.use('Qt5Agg') # Required for GUI support on linux
 import matplotlib.pyplot as plt
+plt.ion()  # Enable interactive mode
+
 from datetime import datetime
 
 # Different tracking programs
@@ -13,13 +22,12 @@ from radar_object_tracking.configuration.RadarRunParams import RadarRunParams
 from radar_object_tracking.radar_tracking import RadarTracking
 from yolo_video_object_tracking.detect import detect
 
-from plots.PlotPolarDynamic import PlotPolarDynamic
 
-def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue):
+def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
    
-    cfar_params = CFARParams(num_guard=2, num_train=12, threshold=10, threshold_is_percentage=False)
+    cfar_params = CFARParams(num_guard=5, num_train=15, threshold=12, threshold_is_percentage=False)
     radar_params = RadarRunParams(args, cfar_params)
-    radar_tracking = RadarTracking(radar_params, radar_data_queue)
+    radar_tracking = RadarTracking(radar_params, radar_data_queue, plot_data_queue)
 
     radar_tracking.object_tracking(stop_event)
     time.sleep(0.1)  # Add a delay to avoid busy-waiting
@@ -69,11 +77,6 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 if (len(tracking.timesteps) % 50 == 0):
                     tracking.show_tracks_plot()
                 
-                # Print this data here......
-                if plot_data_queue is not None:
-                    plot_data_queue.put({"dist": data[:, 0], "angles": data[:, 1]})
-                
-                
             except mp.queues.Empty:
                 pass
             except Exception as e:
@@ -81,22 +84,42 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 pass
             
 def plot_data(plot_queue: mp.Queue, stop_event):
+    import matplotlib
+    matplotlib.use('Qt5Agg')  # Use TkAgg backend for GUI support
+    import matplotlib.pyplot as plt
+    plt.ion()  # Enable interactive mode
+    
     polarPlot = PlotPolarDynamic(min_angle=-90, max_angle=90, max_distance=40, interval=50)
+    detectionsPlot = PlotDetectionsDynamic(num_plots=2, plot_titles=["Rx1 Detections", "Rx2 Detections"], interval=50, max_bins=150)
+    
+    plt.show(block=False)  # Show the plot window without blocking
+    count = 0
 
     while not stop_event.is_set():
         while plot_queue is not None and not plot_queue.empty():
-            try:
+            try:                
                 plot_data = plot_queue.get(timeout=1)
-                distances, angles = plot_data["dist"], plot_data["angles"]
-                polarPlot.update_data(distances, angles, clear=True)
+                if (plot_data["type"] == "detections"):
+                    detections_data = plot_data["data"]
+                    detectionsPlot.update_data([detections_data["Rx1"], detections_data["Rx2"]])
+                    
                 plt.pause(0.1)
                 
+                if count % 20 == 0:
+                    print(f"Plotting data")
+                
+                count += 1
+                    
+                # distances, angles = plot_data["dist"], plot_data["angles"]
+                # polarPlot.update_data(distances, angles, clear=True)
+                # plt.pause(0.1)
+                
                 # Convert the angles to radians, so we can then get the x, y coordinates
-                angles_in_radians = np.radians(angles)
-                x_coord_detections = distances * np.cos(angles_in_radians)
-                y_coord_detections = distances * np.sin(angles_in_radians)
-                x_vel = np.full(x_coord_detections.shape, 1)
-                y_vel = np.full(y_coord_detections.shape, 1)
+                # angles_in_radians = np.radians(angles)
+                # x_coord_detections = distances * np.cos(angles_in_radians)
+                # y_coord_detections = distances * np.sin(angles_in_radians)
+                # x_vel = np.full(x_coord_detections.shape, 1)
+                # y_vel = np.full(y_coord_detections.shape, 1)
                 
             except mp.queues.Empty:
                 pass
@@ -143,10 +166,14 @@ if __name__ == '__main__':
     image_data_queue = None
     plot_data_queue = None
     
+    # plotting process
+    if args.enable_plot:
+        plot_data_queue = mp.Queue()
+    
     # Create the radar tracking process
     if not args.skip_radar:
         radar_data_queue = mp.Queue()
-        radar_proc = mp.Process(target=radar_tracking_task, args=(stop_event, args, radar_data_queue))
+        radar_proc = mp.Process(target=radar_tracking_task, args=(stop_event, args, radar_data_queue, plot_data_queue))
         radar_proc.start()
         
     if not args.skip_video:
@@ -155,16 +182,13 @@ if __name__ == '__main__':
         with torch.no_grad():
             video_proc = mp.Process(target=detect, args=(opt, False, image_data_queue))
             video_proc.start()
-            
-    # plotting process
-    if args.enable_plot:
-        plot_data_queue = mp.Queue()
-        plot_process = mp.Process(target=plot_data, args=(plot_data_queue, stop_event))
-        plot_process.start()
     
     # Queue process to handle incoming data
-    tracking_proc = mp.Process(target=process_queues, args=(stop_event, image_data_queue, radar_data_queue, plot_data_queue))
-    tracking_proc.start()
+    # tracking_proc = mp.Process(target=process_queues, args=(stop_event, image_data_queue, radar_data_queue, plot_data_queue))
+    # tracking_proc.start()
+    
+    if args.enable_plot:
+        plot_data(plot_data_queue, stop_event) # Start the plot data process
     
     try:
         while True:
@@ -179,9 +203,7 @@ if __name__ == '__main__':
             radar_proc.join()
         if not args.skip_video:
             video_proc.join()
-        if args.enable_plot:
-            plot_process.join()
             
-        tracking_proc.join()
+        # tracking_proc.join()
 
     print(f"Tracking duration: {time.time() - start_time:.2f} seconds")

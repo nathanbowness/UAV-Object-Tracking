@@ -25,7 +25,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/object_tracking.py",
             "console": "integratedTerminal",
-            "args": "--weights yolo_video_object_tracking/yolov7.pt --source data/video/M0101.mp4 --conf-thres 0.4 --no-download --view-img --skip-video --radar-from-file --radar-source data/radar/FD"
+            "args": "--weights yolo_video_object_tracking/yolov7.pt --source data/video/M0101.mp4 --conf-thres 0.4 --no-download --view-img --skip-video --radar-from-file --radar-source data/radar/FD --enable-plot"
         },
         {
             "name": "Yolo Object Detection - Video M0101",

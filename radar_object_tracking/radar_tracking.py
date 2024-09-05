@@ -13,9 +13,10 @@ from radar_object_tracking.radarprocessing.RadarDataWindow import RadarDataWindo
 from radar_object_tracking.radarprocessing.radar_fd_textdata_parser import read_columns
 
 class RadarTracking():
-    def __init__(self, radar_run_params: RadarRunParams, radar_data_queue: mp.Queue = None):
+    def __init__(self, radar_run_params: RadarRunParams, radar_data_queue: mp.Queue = None, plot_data_queue: mp.Queue = None):
         self.radar_run_params = radar_run_params
         self.radar_data_queue = radar_data_queue
+        self.plot_data_queue = plot_data_queue
         
         self.tracking_start_time = pd.Timestamp.now().replace(microsecond=0)
         self.radar_window = RadarDataWindow(cfar_params=self.radar_run_params.cfar_params, 
@@ -46,6 +47,7 @@ class RadarTracking():
         # TODO -- ensure the algorithm, and masking for this is correct... Seems like something might be off
         
         detectionsRx1 = np.logical_or(latest_detection_data[:,FDSignalType.I1.value*2], latest_detection_data[:,FDSignalType.Q1.value*2]).astype(int)
+        # detectionsRx1 = latest_detection_data[:,FDSignalType.I1.value*2].astype(int)
         detectionsRx2 = np.logical_or(latest_detection_data[:,FDSignalType.I2.value*2], latest_detection_data[:,FDSignalType.Q2.value*2]).astype(int)
 
         # Mask any detections that have an angle of -90 or 90 -- not valid objects, or out of frame.
@@ -61,6 +63,11 @@ class RadarTracking():
         # Get the actual detections to plot
         detectionsDistanceArray = get_range_bin_for_indexs(detectionIndexes, 0.199861)
         detectionsAngleDeg = raw_records[:,FDSignalType.VIEW_ANGLE.value][detectionIndexes]
+        
+        # If the plot_data_queue is not None, then send the data to the queue
+        if self.plot_data_queue is not None:
+            plot_data = {'type': 'detections', 'time': timestamp, 'data': {'Rx1': detectionsRx1, 'Rx2': detectionsRx2}}
+            self.plot_data_queue.put(plot_data)
         
         if len(detectionsAngleDeg) > 0 and (len(detectionsDistanceArray) == len(detectionsAngleDeg)):
             # Convert angles from degrees to radians
