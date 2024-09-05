@@ -3,10 +3,9 @@ import numpy as np
 import multiprocessing as mp
 import time
 import torch
-import tkinter
 
+from plots.PlotRadarFrequencyHeatMapDynamic import PlotRadarFrequencyHeatMapDynamic
 from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
-
 from plots.PlotPolarDynamic import PlotPolarDynamic
 import matplotlib
 matplotlib.use('Qt5Agg') # Required for GUI support on linux
@@ -25,7 +24,7 @@ from yolo_video_object_tracking.detect import detect
 
 def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
    
-    cfar_params = CFARParams(num_guard=5, num_train=15, threshold=12, threshold_is_percentage=False)
+    cfar_params = CFARParams(num_guard=3, num_train=30, threshold=10, threshold_is_percentage=False)
     radar_params = RadarRunParams(args, cfar_params)
     radar_tracking = RadarTracking(radar_params, radar_data_queue, plot_data_queue)
 
@@ -44,8 +43,7 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 
                 distances, angles = zip(*[(item['distance'], item['angle']) for item in data])
                 distances, angles = np.array(distances), np.array(angles)  # Convert from tuples to lists
-                plot_data_queue.put({"dist": distances, "angles": angles})
-                
+                plot_data_queue.put({"dist": distances, "angles": angles})             
                 # print(f"Received image data: {data}")
                 # Process the data as needed
             except mp.queues.Empty:
@@ -69,7 +67,7 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 # Convert array_data to a numpy array
                 detection_array = np.array([[float(d['x']), float(d['x_v']), float(d['y']), float(d['y_v'])] for d in array_data])
                 
-                # Convert time_str to datetime object using the provided format                   
+                # Convert time_str to datetime object using the provided format                  
                 # timestamp = datetime.strptime(time_str, '%Y-%m-%d %H-%M-%S')
                 
                 tracking.update_tracks(detection_array, timestamp)
@@ -88,11 +86,17 @@ def plot_data(plot_queue: mp.Queue, stop_event):
     matplotlib.use('Qt5Agg')  # Use TkAgg backend for GUI support
     import matplotlib.pyplot as plt
     plt.ion()  # Enable interactive mode
+    max_distance_plotted = 60
     
-    polarPlot = PlotPolarDynamic(min_angle=-90, max_angle=90, max_distance=40, interval=50)
-    detectionsPlot = PlotDetectionsDynamic(num_plots=2, plot_titles=["Rx1 Detections", "Rx2 Detections"], interval=50, max_bins=150)
+    # polarPlot = PlotPolarDynamic(min_angle=-90, max_angle=90, max_distance=40, interval=50)
+    detectionsPlot = PlotDetectionsDynamic(num_plots=2, plot_titles=["Rx1 Detections", "Rx2 Detections"], interval=50, max_bins=512)
+    heatMapPlot = PlotRadarFrequencyHeatMapDynamic(title="Raw FD Data Heatmap", range_bin_size=0.199861, min_distance=5, max_distance=max_distance_plotted)
+    
+    heatMapPlotFreq = PlotRadarFrequencyHeatMapDynamic(title="MicroDop Freq", range_bin_size=0.199861, min_limit=0, max_limit=0.5, min_distance=5, max_distance=max_distance_plotted)
+    heatMapPlotVelocity = PlotRadarFrequencyHeatMapDynamic(title="Velocity", range_bin_size=0.199861, min_limit=-2, max_limit=1, min_distance=5, max_distance=max_distance_plotted)
     
     plt.show(block=False)  # Show the plot window without blocking
+    plt.pause(0.1)
     count = 0
 
     while not stop_event.is_set():
@@ -102,6 +106,25 @@ def plot_data(plot_queue: mp.Queue, stop_event):
                 if (plot_data["type"] == "detections"):
                     detections_data = plot_data["data"]
                     detectionsPlot.update_data([detections_data["Rx1"], detections_data["Rx2"]])
+                    
+                elif (plot_data["type"] == "polar"):
+                    distances, angles = plot_data["dist"], plot_data["angles"]
+                    # polarPlot.update_data(distances, angles, clear=True)
+                    
+                elif (plot_data["type"] == "magnitude"):
+                    magnitude_data = plot_data["data"]
+                    time = plot_data["relativeTimeSec"]
+                    heatMapPlot.update_data(time, magnitude_data)
+                    
+                elif (plot_data["type"] == "microFreq"):
+                    magnitude_data = plot_data["data"]
+                    time = plot_data["relativeTimeSec"]
+                    heatMapPlotFreq.update_data(time, magnitude_data)
+                    
+                elif (plot_data["type"] == "velocity"):
+                    magnitude_data = plot_data["data"]
+                    time = plot_data["relativeTimeSec"]
+                    heatMapPlotVelocity.update_data(time, magnitude_data)
                     
                 plt.pause(0.1)
                 
@@ -153,6 +176,7 @@ if __name__ == '__main__':
     # Options added by me
     parser.add_argument('--skip-video', action='store_true', help='skip video tracking')
     parser.add_argument('--skip-radar', action='store_true', help='skip radar tracking')
+    parser.add_argument('--skip-tracking', action='store_true', help='skip the tracking algorithm and path creation')
     parser.add_argument('--enable-plot', action='store_true', help='enable plotting')
     parser.add_argument('--radar-from-file', action='store_true', help='use radar data from file')
     parser.add_argument('--radar-source', type=str, default='data/radar', help='source folder to pull the radar data from. Only used if "radar-from-file" is set')
@@ -182,10 +206,11 @@ if __name__ == '__main__':
         with torch.no_grad():
             video_proc = mp.Process(target=detect, args=(opt, False, image_data_queue))
             video_proc.start()
-    
-    # Queue process to handle incoming data
-    # tracking_proc = mp.Process(target=process_queues, args=(stop_event, image_data_queue, radar_data_queue, plot_data_queue))
-    # tracking_proc.start()
+            
+    if not args.skip_tracking:
+        # Queue process to handle incoming data
+        tracking_proc = mp.Process(target=process_queues, args=(stop_event, image_data_queue, radar_data_queue, plot_data_queue))
+        tracking_proc.start()
     
     if args.enable_plot:
         plot_data(plot_data_queue, stop_event) # Start the plot data process

@@ -5,12 +5,14 @@ from matplotlib.animation import FuncAnimation
 from radar_object_tracking.cfar import get_range_bin_indexes
 
 class PlotRadarFrequencyHeatMapDynamic:
-    def __init__(self, title, min_distance=0, max_distance=None, range_bin_size=0.2499, max_steps=50):
+    def __init__(self, title, min_distance=0, max_distance=None, range_bin_size=0.2499, max_steps=50, min_limit=-60, max_limit=20):
         self.title = title
         self.fig, self.ax = plt.subplots(figsize=(15, 8))
         self.max_steps = max_steps
         self.time_since_start = np.zeros(max_steps)
         self.range_increment = range_bin_size
+        self.min_limit = min_limit
+        self.max_limit = max_limit
         
         if max_distance is None:
             max_distance = 512 * range_bin_size
@@ -23,6 +25,7 @@ class PlotRadarFrequencyHeatMapDynamic:
     def init_plot(self):
         # This sets up an initial blank image
         self.im = self.ax.imshow(np.zeros((self.max_steps, len(self.valid_indices))), aspect='auto', cmap='jet', origin='lower')
+        self.im.set_clim(self.min_limit, self.max_limit)  # Set the color limits to -60 to 20 dBm
         self.ax.set_ylabel('Measurement Time (s)')
         self.ax.set_xlabel('Slant Range (m)')
         self.ax.set_title(self.title)
@@ -39,7 +42,8 @@ class PlotRadarFrequencyHeatMapDynamic:
     def update_plot(self, frame):
         if self.radar_signal_for_bins.size > 0:
             self.im.set_data(self.radar_signal_for_bins)
-            self.im.set_clim(vmin=self.radar_signal_for_bins.min(), vmax=self.radar_signal_for_bins.max())
+            self.im.set_clim(self.min_limit, self.max_limit)  # Ensure the color limits are set to -60 to 20 dBm
+            # self.im.set_clim(vmin=self.radar_signal_for_bins.min(), vmax=self.radar_signal_for_bins.max())
             self.im.set_extent([0, self.range_bins[-1], self.time_since_start[0], self.time_since_start[-1]])
         return self.im,
 

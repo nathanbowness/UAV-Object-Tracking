@@ -11,7 +11,7 @@ from radar_object_tracking.radarprocessing.FDDataMatrix import FDDataMatrix
 
 def extract_timestamp_from_filename(filename):
     # Try to extract the timestamp part from the filename using regex with milliseconds
-    match = re.search(r'trial_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.\d{3})', filename)
+    match = re.search(r'trial\d?_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.\d{3})', filename)
     if match:
         timestamp_str = match.group(1)
         # Replace underscores with spaces to match the format
@@ -20,7 +20,7 @@ def extract_timestamp_from_filename(filename):
         dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S.%f')
     else:
         # Try to extract the timestamp part from the filename using regex without milliseconds
-        match = re.search(r'trial_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', filename)
+        match = re.search(r'trial\d?_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', filename)
         if match:
             timestamp_str = match.group(1)
             # Replace underscores with spaces to match the format

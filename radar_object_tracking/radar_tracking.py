@@ -21,7 +21,8 @@ class RadarTracking():
         self.tracking_start_time = pd.Timestamp.now().replace(microsecond=0)
         self.radar_window = RadarDataWindow(cfar_params=self.radar_run_params.cfar_params, 
                                             start_time=self.tracking_start_time,
-                                            capacity=self.radar_run_params.data_window_size)
+                                            capacity=self.radar_run_params.data_window_size,
+                                            run_velocity_measurements=self.radar_run_params.run_velocity_measurements)
 
     def object_tracking(self, stop_event):
         
@@ -68,6 +69,18 @@ class RadarTracking():
         if self.plot_data_queue is not None:
             plot_data = {'type': 'detections', 'time': timestamp, 'data': {'Rx1': detectionsRx1, 'Rx2': detectionsRx2}}
             self.plot_data_queue.put(plot_data)
+            
+            new_time = (self.radar_window.timestamps[-1] - self.radar_window.creation_time).total_seconds()
+            plot_data = {'type': 'magnitude', 'relativeTimeSec': new_time, 'data': raw_records[1:,FDSignalType.I1.value]}
+            self.plot_data_queue.put(plot_data)
+            
+            if self.radar_run_params.run_velocity_measurements:
+                plot_data_micro = {'type': 'microFreq', 'relativeTimeSec': new_time, 'data': self.radar_window.velocity_records[-1][:,0]}
+                self.plot_data_queue.put(plot_data_micro)
+                
+                plot_data_velo = {'type': 'velocity', 'relativeTimeSec': new_time, 'data': self.radar_window.velocity_records[-1][:,1]}
+                self.plot_data_queue.put(plot_data_velo)
+            
         
         if len(detectionsAngleDeg) > 0 and (len(detectionsDistanceArray) == len(detectionsAngleDeg)):
             # Convert angles from degrees to radians
@@ -89,7 +102,7 @@ class RadarTracking():
         files = os.listdir(directory_to_process)
         
         # Filter the files based on the naming convention
-        txt_files = [f for f in files if f.startswith('trial_') and f.endswith('.txt')]
+        txt_files = [f for f in files if f.startswith('trial') and f.endswith('.txt')]
         
         # Sort the files if needed (optional)
         txt_files.sort()
@@ -111,5 +124,7 @@ class RadarTracking():
             self.handle_object_tracking()
             
             time.sleep(self.radar_run_params.recordedProcessingDelaySec)
+        
+        print("Completed all processing of radar data from the folder.")
             
     

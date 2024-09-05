@@ -39,7 +39,7 @@ class PlotDetectionsDynamic:
             self.scatters.append(scatter)
         
         # Initialize the animation
-        self.anim = FuncAnimation(self.fig, self.update_plot, init_func=self.init_plot, interval=interval, blit=True, cache_frame_data=True)
+        self.anim = FuncAnimation(self.fig, self.update_plot, init_func=self.init_plot, interval=interval, blit=True, cache_frame_data=False)
         plt.show(block=False)
         plt.ion()
 
