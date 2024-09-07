@@ -14,6 +14,7 @@ class RadarRunParams():
         self.recordedDataFormat = RunDataFormat.FD_CUSTOM
         self.ramp_type = "UP-Ramp"
         self.cfar_params = cfar_params
+        self.run_velocity_measurements = False
         
         # Run validation of settings, exit if they are invalid
         self.run_validation(args)

@@ -4,11 +4,11 @@ from constants import SPEED_LIGHT
 from radar_object_tracking.radarprocessing.FDDataMatrix import FDDataMatrix, FDSignalType
 from config import RadarRunParams, CFARParams
 
+from radar_object_tracking.radarprocessing.micro_doppler_velocity_analysis import micro_doppler_analysis, calculate_velocity
+
 import numpy as np
 import pandas as pd
 from datetime import timedelta
-
-from scipy.signal import stft
 
 from .FDDetectionMatrix import FDDetectionMatrix
 
@@ -26,16 +26,19 @@ class RadarDataWindow():
     timestamps -> timestamp of when each record was recorded
     raw_records -> np array (512, 7) [range_bins, I1, Q1, I2, Q2, Rx1 Phase, Rx2 Phase, View Angle]
     detection_records -> np array (512, 8) [range_bins, I1 Det, I1_Thresh, Q1 Det, Q1_Thresh, I2 Det, I2_Thresh, Q2 Det, Q2_Thresh]
+    velocity_records -> np array (512, 2) [frequency, velocity]
     """
-    def __init__(self, cfar_params: CFARParams, start_time: pd.Timestamp, capacity: int = 1000, duration_seconds=None):
+    def __init__(self, cfar_params: CFARParams, start_time: pd.Timestamp, capacity: int = 1000, duration_seconds=None, run_velocity_measurements=False):
         self.creation_time = start_time
         
         self.timestamps = deque()
         self.raw_records = deque()
         self.detection_records = deque()
         self.velocity_records = deque()
+        self.diff_records = deque()
         self.capacity = capacity
         self.duration = timedelta(seconds=duration_seconds) if duration_seconds else None
+        self.run_velocity_measurements = run_velocity_measurements
         
         # Cfar params
         self.cfar_params = cfar_params
@@ -63,12 +66,23 @@ class RadarDataWindow():
         Ensure the deque doesn't exceed the capacity set
         """
         self.timestamps.append(record.timestamp.replace(microsecond=0))
+        # Calculate the difference between the current record coming in and the previous record
+        if len(self.raw_records) > 1:
+            self.diff_records.append(record.fd_data - self.raw_records[-1])
         self.raw_records.append(record.fd_data)
+        
         self.remove_old_records()
+        
         
     def calculate_detections(self, record_timestamp: pd.Timestamp):
         detection_data = self.process_new_data()
-        # velocity = self.velocity_calcs()
+        
+        if self.run_velocity_measurements:
+            if len(self.raw_records) < 10:
+                return self.velocity_records.append(np.array([0, 0]))
+            else:
+                self.micro_doppler_velocity_analysis()
+                
         self.detection_records.append(detection_data)
         
     def get_raw_records(self):
@@ -77,37 +91,39 @@ class RadarDataWindow():
     def get_detection_records(self):
         return self.detection_records
     
-    # TODO - fix this, currently do not have usable outputs
-    def velocity_calcs(self):
-        
+    def micro_doppler_velocity_analysis(self):
+        """
+        Perform micro-Doppler analysis on the raw data.
+        """
         if len(self.timestamps) < 2:
             return None
-
-        f_c = (24000*(10**6)) + (600 / 2)*(10**6) # Central frequency in Hz - Conversion from Mhz to 
-        last_record = self.raw_records[-1]
-        second_last_record = self.raw_records[-2]
         
-        delta_phase_Rx1 = last_record[:,FDSignalType.RX1_PHASE.value] - second_last_record[:,FDSignalType.RX1_PHASE.value]
+        time_interval = 0.245  # Time interval between each record in seconds
         
-        delta_phase_Rx1_unwrapped = np.unwrap(delta_phase_Rx1, axis=0)
-        
-        measurement_rate = 5  # Number of measurements per second (adjust to your radar's measurement rate)
-        f_D = delta_phase_Rx1_unwrapped * measurement_rate / (2 * np.pi)
-
-        # Compute the velocity for micro-Doppler analysis
-        velocity = f_D * SPEED_LIGHT / (2 * f_c)
-        
-        f, t, Zxx = stft(velocity, fs=measurement_rate, nperseg=256, noverlap=128)
-        
-        # plt.figure(figsize=(10, 5))
-        # plt.pcolormesh(t, f, np.abs(Zxx), shading='gouraud')
-        # plt.title('Micro-Doppler Time-Frequency Analysis')
-        # plt.xlabel('Range Bins')
-        # plt.ylabel('Frequency (Hz)')
-        # plt.colorbar(label='Magnitude')
-        # plt.show()
-        
-        return None
+        velocity_records = []
+        for i in range(512):
+            phase_I1 = np.array([self.raw_records[-j][i, FDSignalType.I1.value] for j in range(10, 0, -1)])
+            phase_Q1 = np.array([self.raw_records[-j][i, FDSignalType.Q1.value] for j in range(10, 0, -1)])
+            phase_I2 = np.array([self.raw_records[-j][i, FDSignalType.I2.value] for j in range(10, 0, -1)])
+            phase_Q2 = np.array([self.raw_records[-j][i, FDSignalType.Q2.value] for j in range(10, 0, -1)])
+            
+            f, t, Zxx, doppler_avg, carrier_frequency, \
+            drone_detected, max_magnitude_per_time, max_magnitude_overall = micro_doppler_analysis(phase_I1,
+                                                                                                phase_Q1,
+                                                                                                phase_I2,
+                                                                                                phase_Q2,
+                                                                                                time_interval)
+            
+            velocity = calculate_velocity(doppler_avg)
+            ftest = f[-1]
+            latest_freq = f[np.argmax(np.abs(Zxx), axis=0)]
+            latest_velocity = velocity[-1]
+            
+            # Create a NumPy array with exactly two numbers
+            velocity_record = np.array([max_magnitude_overall, velocity[-1]], dtype=float)
+            velocity_records.append(velocity_record)
+            
+        self.velocity_records.append(np.array(velocity_records,  dtype=float))
     
     def process_new_data(self):
         if len(self.raw_records) < self.required_cells_cfar:
@@ -195,4 +211,29 @@ class RadarDataWindow():
                 detections.append(self.detection_records[i][:, FDSignalType*2])
                 
         return np.array(timestamps), np.append(detections)
+    
+    
+            
+    
+    # def process_new_data_diff(self):
+    #     if len(self.raw_records) < self.required_cells_cfar:
+    #         # Not enough data to run CFAR
+    #         return np.zeros((512, 8))
+
+    #     num_bins = 512  # Assuming 512 range bins
+    #     signals = [FDSignalType.I1, FDSignalType.Q1, FDSignalType.I2, FDSignalType.Q2]
+    #     detection_matrix = np.zeros((num_bins, 8))
+        
+    #     relevate_deque_data = list(self.raw_records)[-self.required_cells_cfar:]
+        
+    #     # relevate_deque_data = list(itertools.islice(self.raw_records, len(self.raw_records) - self.required_cells_cfar, len(self.raw_records)))
+    #     # relevant_data_np = np.concatenate(relevate_deque_data)
+
+    #     for i in range(num_bins):  # Each range bin
+    #         for idx, signal in enumerate(signals):
+    #             data = np.array([item[i][signal.value] for item in relevate_deque_data])
+    #             detection_matrix[i, idx*2], detection_matrix[i, idx*2+1] = cfar_single(data, 
+    #                                                                                    index_CUT=self.index_to_eval,
+    #                                                                                    cfar_params=self.cfar_params)
+    #     return detection_matrix
         

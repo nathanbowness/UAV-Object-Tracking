@@ -5,7 +5,8 @@ import random
 
 # Must be imported last, to ensure it can dynamically be shown
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Qt5Agg')
+plt.ion()
 
 class PlotPolarDynamic:
     def __init__(self, max_points=500, interval=1000, min_angle=-70, max_angle=70, max_distance=100, angle_unit='degrees'):
