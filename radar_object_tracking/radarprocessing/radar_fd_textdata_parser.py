@@ -43,7 +43,7 @@ def determine_phase_angle(I1_phase: np.array,
     radarParams = get_radar_params()
     fc = (radarParams.minFreq*(10**6)) + (radarParams.manualBW / 2)*(10**6)
     
-    epsilon = 2e-10
+    epsilon = 1e-10
     phase1 = np.arctan(Q1_phase / (I1_phase + epsilon))
     phase2 = np.arctan(Q2_phase / (I2_phase + epsilon))
     
