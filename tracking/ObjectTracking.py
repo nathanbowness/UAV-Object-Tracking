@@ -32,10 +32,13 @@ class ObjectTrackingExtendedObjectGNN():
     """
     capacity: maximum number of track iterations to store 
     """
-    def __init__(self, start_time, capacity: int=1000, expected_velocity: float=1, path_min_points: int=5, path_points_to_deletion: int=5):
+    def __init__(self, start_time, min_detections_to_cluster: int = 2, cluster_distance: int = 2, track_tail_length : float = 0.01, capacity: int=1000, expected_velocity: float=1, path_min_points: int=3, path_points_to_deletion: int=5):
     
         self.default_cov = [5, 0.5, 5, 0.5]
         self.path_min_points = path_min_points
+        self.min_detections_to_cluster = min_detections_to_cluster
+        self.cluster_distance = cluster_distance
+        self.track_tail_length = track_tail_length
         self.transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(expected_velocity),
                                                                        ConstantVelocity(expected_velocity)])
         
@@ -98,7 +101,7 @@ class ObjectTrackingExtendedObjectGNN():
         
         # Find clusters in the data using DBSCAN
         # eps and min_samples need to be chosen based on your specific data distribution
-        clustering = DBSCAN(eps=100, min_samples=2).fit(measurements)
+        clustering = DBSCAN(eps=self.cluster_distance, min_samples=self.min_detections_to_cluster).fit(measurements)
         labels = clustering.labels_
         
         # Analyze cluster results
@@ -140,7 +143,7 @@ class ObjectTrackingExtendedObjectGNN():
         for time, current_tracks in tracker:
             tracks.update(current_tracks)
         
-        track_plot = AnimatedPlotterly(self.timesteps, tail_length=0.2)
+        track_plot = AnimatedPlotterly(self.timesteps, tail_length=self.track_tail_length)
         # track_plot.plot_measurements(self.all_measurements, [0, 2])
         
         track_plot.plot_measurements(self.centroid_detections, [0, 2], marker=dict(color='red'),
@@ -150,19 +153,49 @@ class ObjectTrackingExtendedObjectGNN():
         print("Done plotting.")
         
 if __name__ == '__main__':
-    tracking = ObjectTrackingExtendedObjectGNN(datetime.now())
+    currentTime = datetime.now()
     
-    test1 = np.array([[1, 1, 1, 1], 
-                      [2, 1, 2, 1], 
-                      [3, 1, 3, 1], 
-                      [3, 1, 3, 1], 
-                      [4, 1, 4, 1], 
-                      [4, 1, 4.1, 1],
-                      [4, 1, 4.1, 1], 
-                      [4.2, 1, 4.1, 1], 
-                      [4.5, 1, 4.1, 1], 
-                      [4.4, 1, 4.1, 1], 
-                      [5, 1, 4.7, 1]])
+    # Add a second to the curent time call it time2
+    time2 = currentTime + timedelta(seconds=1)
+    tracking = ObjectTrackingExtendedObjectGNN(datetime.now(), path_min_points = 2, path_points_to_deletion=5)
+    
+    # General path create with 4 steady objects
+    # tracking.update_tracks(np.array(([1, 1, 1, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=1))
+    # tracking.update_tracks(np.array(([1.5, 1, 1.5, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=2))
+    # tracking.update_tracks(np.array(([1.2, 1, 1.2, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=3))
+    # tracking.update_tracks(np.array(([1.4, 1, 1.4, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=4))
+    # tracking.update_tracks(np.array(([1.7, 1, 1.7, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=5))
+    # tracking.update_tracks(np.array(([1.8, 1, 1.8, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=6))
+    # tracking.update_tracks(np.array(([1, 1, 1, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=7))
+    
+    # Path tracking with 2 objects, then 1 object, then 2nd object re-appears. Based on path_points_to_deletion it may still be tracked by the same object (5 = same object, 2 = new object)
+    # tracking.update_tracks(np.array(([1, 1, 1, 1], [5, 1, 5, 1])), currentTime + timedelta(seconds=1))
+    # tracking.update_tracks(np.array(([1.5, 1, 1.5, 1], [5.5, 2, 5.5, 2])), currentTime + timedelta(seconds=2))
+    # tracking.update_tracks(np.array(([1.2, 1, 1.2, 1], [6.8, 1, 6.8, 1])), currentTime + timedelta(seconds=3))
+    # tracking.update_tracks(np.array(([1.4, 1, 1.4, 1], [7.2, 1, 5.9, 1])), currentTime + timedelta(seconds=4))
+    # tracking.update_tracks(np.array(([1.7, 1, 1.7, 1], [6.6, 1, 5.5, 1])), currentTime + timedelta(seconds=5))
+    # tracking.update_tracks(np.array(([1.8, 1, 1.8, 1], [6, 1, 5.2, 1])), currentTime + timedelta(seconds=6))
+    # tracking.update_tracks(np.array(([1.6, 1, 2.4, 1], [5, 1, 4.5, 1])), currentTime + timedelta(seconds=7))
+    # tracking.update_tracks(np.array(([1.5, 1, 2.6, 1],)), currentTime + timedelta(seconds=8))
+    # tracking.update_tracks(np.array(([1.3, 1, 2.8, 1],)), currentTime + timedelta(seconds=9))
+    # tracking.update_tracks(np.array(([1.0, 1, 2.9, 1],)), currentTime + timedelta(seconds=10))
+    # tracking.update_tracks(np.array(([0.8, 1, 3.3, 1],)), currentTime + timedelta(seconds=11))
+    # tracking.update_tracks(np.array(([0.7, 1, 3.5, 1],[4.8, 1, 4.2, 1])), currentTime + timedelta(seconds=12))
+    # tracking.update_tracks(np.array(([0.6, 1, 3.7, 1],[4.6, 1, 4.6, 1])), currentTime + timedelta(seconds=13))
+    # tracking.update_tracks(np.array(([0.5, 1, 3.8, 1],[4.4, 1, 4.8, 1])), currentTime + timedelta(seconds=14))
+    # tracking.update_tracks(np.array(([0.3, 1, 4.2, 1],[4.2, 1, 5.2, 1])), currentTime + timedelta(seconds=15))
+    
+    # 2 objects crossing eachother -- needs some help, has issues with crossovers
+    tracking.update_tracks(np.array(([1, 1, 1, 1], [1, 1, 5, 1])), currentTime + timedelta(seconds=1))
+    tracking.update_tracks(np.array(([2, 1, 2, 1], [2, 2, 4.5, 2])), currentTime + timedelta(seconds=2))
+    tracking.update_tracks(np.array(([3, 1, 3, 1], [3, 1, 4, 1])), currentTime + timedelta(seconds=3))
+    tracking.update_tracks(np.array(([4, 1, 4, 1], [3.5, 1, 3.5, 1])), currentTime + timedelta(seconds=4))
+    tracking.update_tracks(np.array(([5, 1, 5, 1], [4, 1, 3, 1])), currentTime + timedelta(seconds=5))
+    tracking.update_tracks(np.array(([6, 1, 6, 1], [4.2, 1, 2.2, 1])), currentTime + timedelta(seconds=6))
+    tracking.update_tracks(np.array(([7, 1, 7, 1], [5, 1, 2, 1])), currentTime + timedelta(seconds=7))
+    
+    tracking.show_tracks_plot()
+    print("complete")
     
     # Create some detections
 

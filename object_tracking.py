@@ -24,7 +24,7 @@ from yolo_video_object_tracking.detect import detect
 
 def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
    
-    cfar_params = CFARParams(num_guard=3, num_train=30, threshold=10, threshold_is_percentage=False)
+    cfar_params = CFARParams(num_guard=10, num_train=15, threshold=12, threshold_is_percentage=False)
     radar_params = RadarRunParams(args, cfar_params)
     radar_tracking = RadarTracking(radar_params, radar_data_queue, plot_data_queue)
 
@@ -72,8 +72,8 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 
                 tracking.update_tracks(detection_array, timestamp)
                 
-                if (len(tracking.timesteps) % 50 == 0):
-                    tracking.show_tracks_plot()
+                # if (len(tracking.timesteps) % 50 == 0):
+                #     tracking.show_tracks_plot()
                 
             except mp.queues.Empty:
                 pass
