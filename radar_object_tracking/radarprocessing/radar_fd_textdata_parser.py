@@ -40,24 +40,48 @@ def determine_phase_angle(I1_phase: np.array,
                           Q1_phase: np.array, 
                           I2_phase: np.array, 
                           Q2_phase: np.array):
+    """
+    Determine the phase angle of the signal based on the phase of the I and Q components of the signal.
+    All signals should be in radaians
+    """
     radarParams = get_radar_params()
     fc = (radarParams.minFreq*(10**6)) + (radarParams.manualBW / 2)*(10**6)
     
-    epsilon = 1e-10
-    phase1 = np.arctan(Q1_phase / (I1_phase + epsilon))
-    phase2 = np.arctan(Q2_phase / (I2_phase + epsilon))
+    # Calculate phases for Rx1 and Rx2
+    theta_Rx1 = np.unwrap(np.arctan2(I1_phase, Q1_phase))
+    theta_Rx2 = np.unwrap(np.arctan2(I2_phase, Q2_phase))
     
-    phase_differences = phase2 - phase1
+    # Phase difference between Rx1 and Rx2
+    delta_theta = theta_Rx2 - theta_Rx1
     
-    # phase_differences = I2_phase - I1_phase
-    phase_differences_unwrapped = np.unwrap([phase_differences])[0]
+    # Calculate object angle (in radians)
+    object_angle_radians = (delta_theta * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS)
     
-    sin_alpha = (phase_differences_unwrapped * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS)
+    alpha = np.arcsin(np.clip(object_angle_radians, -1, 1))
     
-    sin_alpha = np.clip(sin_alpha, -1, 1)
+    # conver names
+    alpha_degrees = np.degrees(alpha)
+    phase_differences_unwrapped = delta_theta
+    phase1 = np.degrees(theta_Rx1)
+    phase2 = np.degrees(theta_Rx2)
+
+    # OLD CALCULATION METHOD
+    # epsilon = 1e-10
+    # phase1 = np.arctan(Q1_phase / (I1_phase + epsilon))
+    # phase2 = np.arctan(Q2_phase / (I2_phase + epsilon))
+    
+    # phase_differences = phase2 - phase1
+    # phase_differences = I1_phase - I2_phase
+    
+    # # phase_differences = I2_phase - I1_phase
+    # phase_differences_unwrapped = np.unwrap([phase_differences])[0]
+    
+    # sin_alpha = (phase_differences_unwrapped * SPEED_LIGHT) / (2 * np.pi * fc * DIST_BETWEEN_ANTENNAS)
+    
+    # sin_alpha = np.clip(sin_alpha, -1, 1)
         
-    alpha = np.arcsin(sin_alpha)
-    alpha_degrees = np.degrees(alpha)  # Convert from radians to degrees
+    # alpha = np.arcsin(sin_alpha)
+    # alpha_degrees = np.degrees(alpha)  # Convert from radians to degrees
     
     # An array of measured data - [Rx1 Phase [Rad], Rx2 Phase [Rad], Phase_Diff, Estimated View Angle [Deg]] (512 x 4)
     return np.vstack((phase1, phase2, phase_differences_unwrapped, alpha_degrees)).T
