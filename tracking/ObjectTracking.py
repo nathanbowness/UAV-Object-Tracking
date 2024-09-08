@@ -32,9 +32,19 @@ class ObjectTrackingExtendedObjectGNN():
     """
     capacity: maximum number of track iterations to store 
     """
-    def __init__(self, start_time, min_detections_to_cluster: int = 2, cluster_distance: int = 2, track_tail_length : float = 0.01, capacity: int=1000, expected_velocity: float=1, path_min_points: int=3, path_points_to_deletion: int=5):
+    def __init__(self, 
+                 start_time, 
+                 min_detections_to_cluster: int = 2, 
+                 cluster_distance: int = 2, 
+                 track_tail_length : float = 0.01, 
+                 capacity: int=1000, 
+                 expected_velocity: float=1, 
+                 path_min_points: int=3, 
+                 path_points_to_deletion: int=5,
+                 noise_covar: list = [4, 4],
+                 default_cov: list = [4, 0.3, 4, 0.3]):
     
-        self.default_cov = [5, 0.5, 5, 0.5]
+        self.default_cov = default_cov
         self.path_min_points = path_min_points
         self.min_detections_to_cluster = min_detections_to_cluster
         self.cluster_distance = cluster_distance
@@ -46,7 +56,7 @@ class ObjectTrackingExtendedObjectGNN():
         self.predictor = ExtendedKalmanPredictor(self.transition_model)
         self.measurement_model = LinearGaussian(ndim_state=4,
                                    mapping=(0, 2),
-                                   noise_covar=np.diag([25, 25]))
+                                   noise_covar=np.diag(noise_covar))
         self.updater = ExtendedKalmanUpdater(self.measurement_model)
         
         # Deleter
@@ -65,7 +75,7 @@ class ObjectTrackingExtendedObjectGNN():
         # Initiator
         self.initiator = MultiMeasurementInitiator(
             prior_state=GaussianState(np.array([0, 0, 0, 0]),
-                                    np.diag([10, 0.5, 10, 0.5]) ** 2,
+                                    np.diag(default_cov) ** 2,
                                     timestamp=start_time),
             measurement_model=None,
             deleter=self.deleter,
