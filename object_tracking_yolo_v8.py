@@ -1,4 +1,4 @@
-from tracking.DetectionsAtTime import Detection, DetectionsAtTime
+from tracking.DetectionsAtTime import DetectionDetails, DetectionsAtTime
 from ultralytics import YOLO
 import time
 from datetime import datetime
@@ -6,6 +6,7 @@ from PIL import Image
 import os
 import multiprocessing as mp
 import math
+from constants import IMAGE_DETECTION_TYPE
 
 from object_location_size import ImageCharacteristics, CameraDetails, object_location
 
@@ -54,7 +55,7 @@ def detection_from_bbox(yolo_box, detected_object, image_char : ImageCharacteris
     :param camera_details: A CameraDetails object containing details of the camera.
     :return: Detection object containing the object type and location.
     """
-    print(f"Object: {detected_object}, Confidence { yolo_box.conf[0].item()}")
+    # print(f"Object: {detected_object}, Confidence { yolo_box.conf[0].item()}")
     
     x1, y1, x2, y2 = yolo_box.xyxy[0].tolist()
     polar_range_data = object_location(x1, y1, x2, y2, image_char=image_char, camera_details=camera_details)
@@ -71,7 +72,7 @@ def detection_from_bbox(yolo_box, detected_object, image_char : ImageCharacteris
     x = distance_horizontal * math.sin(az_angle_rad)  # Horizontal distance in the x direction
     y = distance * math.sin(el_angle_rad)  # Vertical distance in the y direction
     
-    return Detection(detected_object, [x, 0, y , 0])
+    return DetectionDetails(detected_object, [x, 0, y , 0])
     
 def track_objects(args, data_queue : mp.Queue = None):
     ### PARAMs to the program
@@ -90,8 +91,8 @@ def track_objects(args, data_queue : mp.Queue = None):
     show = True
     ### END OF PARAMS
     
-    camera = CameraDetails(horz_fov=60)
-    image_char = ImageCharacteristics()
+    camera = CameraDetails(horz_fov=170)
+    image_char = None
     
     output_folder = setup_output_folders(output_directory, save_raw_img)
     model = YOLO(model_weights)
@@ -100,30 +101,36 @@ def track_objects(args, data_queue : mp.Queue = None):
     # save_crops=True # save detected crops as .jpg files, of the individual objects detected
     results = model.track(source=source, conf=confidence_threshold, iou=iou_threshold, save=save_detection_video, show=show, stream=stream, project=output_folder, show_boxes=show_boxes)
 
-    for i, result in enumerate(results):
+    for i, result in enumerate(results):        
         orig_img_h = result.orig_img.shape[0]
         orig_img_w = result.orig_img.shape[1]
+        
+        if image_char is None:
+            image_char = ImageCharacteristics(image_width=orig_img_w, image_height=orig_img_h)
         
         # If configured, saved the original image to disk, in the <output_folder>/raw/*
         if save_raw_img:
             orig_img_rgb = Image.fromarray(result.orig_img[..., ::-1])  # Convert BGR to RGB
             orig_img_rgb.save(os.path.join(output_folder, "raw", f"image_{i}_{orig_img_w}x{orig_img_h}.jpg"))
         
-        detectionTimestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        detectionTimestamp = datetime.now().replace(microsecond=0)
         detections = []
         
         # Iterate over the detected objects, add tracking details into the detections_data list
         for box in result.boxes:
             classificationIndex = box.cls[0].item()
             detected_object = result.names[classificationIndex]
-            print(f"Object: {detected_object}, Confidence { box.conf[0].item()}")
+            # print(f"Object: {detected_object}, Confidence { box.conf[0].item()}")
             
             detection = detection_from_bbox(box, detected_object, image_char=image_char, camera_details=camera)
             detections.append(detection)
         
         # If a data_queue is provided, put the detections into the queue
         if data_queue is not None and len(detections) > 0:
-            data_queue.put(DetectionsAtTime(detectionTimestamp, detections))
+            data_queue.put(DetectionsAtTime(detectionTimestamp, IMAGE_DETECTION_TYPE, detections))
+            
+        # For debugging purposes, add 1 second delay between frames
+        # time.sleep(1)
 
 if __name__ == "__main__":
     track_objects(None)

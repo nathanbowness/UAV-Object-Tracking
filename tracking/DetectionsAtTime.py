@@ -1,8 +1,8 @@
 from typing import List, Literal
 from datetime import datetime
 
-class Detection:
-    def __init__(self, obj_type: str, detection: List[float]):
+class DetectionDetails:
+    def __init__(self, obj_type: str, detection_data: List[float]):
         """
         Initialize a single detection.
 
@@ -10,7 +10,7 @@ class Detection:
         :param detection: A list containing [x, x_v, y, y_v] values as floats.
         """
         self.object = obj_type  # Store the type of the object
-        self.detection = detection  # Store the detection data [x, x_v, y, y_v]
+        self.data = detection_data  # Store the detection data [x, x_v, y, y_v]
 
     def __repr__(self):
         """
@@ -22,7 +22,7 @@ class Detection:
 
 
 class DetectionsAtTime:
-    def __init__(self, timestamp: datetime, data_type: Literal['radar', 'video'], detections: List[Detection]):
+    def __init__(self, timestamp: datetime, data_type: Literal['radar', 'video'], detections: List[DetectionDetails]):
         """
         Initialize the DetectionsAtTime object.
 
