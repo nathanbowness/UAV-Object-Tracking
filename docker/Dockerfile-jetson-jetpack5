@@ -1,0 +1,7 @@
+FROM ultralytics/ultralytics:8.2.93-jetson-jetpack5
+
+COPY . /workspace
+
+WORKDIR /workspace
+
+RUN pip install -r requirements.txt

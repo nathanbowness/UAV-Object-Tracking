@@ -1,44 +1,50 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "Ubuntu 22.04, Cuda 11.8, Python 3",
+	"name": "Radar, Video Tracking",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "nvidia/cuda:11.8.0-devel-ubuntu22.04",
+	"image": "ultralytics/ultralytics:latest",
 	"runArgs": [
-		"--gpus=all"
+		"--gpus=all",
+		 "--ipc=host",
+		 "-v", "/tmp/.X11-unix:/tmp/.X11-unix",
+		 "-v", "${env:HOME}/.Xauthority:/root/.Xauthority",
+		// Mount output and data folders to allow the containers to copy in/out data
+		 "-v", "${localWorkspaceFolder}/output:/output",
+		 "-v", "${localWorkspaceFolder}/data:/data"
 		// "--device=/dev/video2:/dev/video0" // required for mounting webcam to the container
 	],
 	"remoteEnv": {
-		"PATH": "${containerEnv:PATH}:/usr/local/cuda/bin",
-		"LD_LIBRARY_PATH": "$LD_LIBRARY_PATH:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64",
-		"XLA_FLAGS": "--xla_gpu_cuda_data_dir=/usr/local/cuda"
+		"DISPLAY": "${localEnv:DISPLAY}",
+		// "PATH": "${containerEnv:PATH}:/usr/local/cuda/bin",
+		// "LD_LIBRARY_PATH": "$LD_LIBRARY_PATH:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64",
+		// "XLA_FLAGS": "--xla_gpu_cuda_data_dir=/usr/local/cuda"
 	},
-	"updateContentCommand": "bash .devcontainer/install-dev-tools.sh",
+	// "updateContentCommand": "bash .devcontainer/install-dev-tools.sh",
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"ms-python.python",
 				"ms-python.debugpy",
-				"ms-python.vscode-pylance",
+				// "ms-python.vscode-pylance",
 				"KevinRose.vsc-python-indent",
 				"ms-toolsai.jupyter",
 				"ms-toolsai.vscode-jupyter-cell-tags",
 				"ms-toolsai.jupyter-keymap",
 				"ms-toolsai.jupyter-renderers",
-				"ms-toolsai.vscode-jupyter-slideshow"
+				"ms-toolsai.vscode-jupyter-slideshow",
+				"bierner.markdown-mermaid"
 			]
 		}
 	},
 	"mounts": [
-		"source=c/Users/User/git/yolov7-object-tracking/video_samples,target=/share,type=bind"
+		// { "source": "~/.Xauthority", "target": "/root/.Xauthority", "type": "bind" },
+		// { "source": "/tmp/.X11-unix", "target": "/tmp/.X11-unix", "type": "bind" }
 	],
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "nvidia-smi" // "pip3 install --user -r requirements.txt"
+	"postCreateCommand": "pip install -r requirements.txt && nvidia-smi",
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+	"remoteUser": "root"
 }

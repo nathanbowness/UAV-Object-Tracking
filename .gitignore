@@ -170,5 +170,6 @@ stonesoup_tutorials/*
 # Test videos
 *.mp4
 
-# Ignore all data samples
+# Ignore all data samples used for testing, and output folder from that testing
 data/
+output/

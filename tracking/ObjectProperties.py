@@ -1,5 +1,3 @@
-
-
 class ObjectProperties():
     def __init__(self):
         # Distances in meters

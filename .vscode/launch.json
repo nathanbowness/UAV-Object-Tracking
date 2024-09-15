@@ -5,74 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Real-Time Radar Processing",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/new_data_processing.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Object Tracking Program",
+            "name": "Tracking: Video Only",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/object_tracking.py",
-            "console": "integratedTerminal",
-            "args": "--weights ${workspaceFolder}/yolo_video_object_tracking/yolov7.pt --source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --view-img"
-        },
-        {
-            "name": "Current DEBUG",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/object_tracking.py",
-            "console": "integratedTerminal",
-            "args": "--weights yolo_video_object_tracking/yolov7.pt --source data/video/M0101.mp4 --conf-thres 0.4 --no-download --view-img --skip-video --radar-from-file --enable-plot --skip-tracking --radar-source data/radar/run7-FD" // --enable-plot
-        },
-        {
-        "name": "Doppler Analysis",
-        "type": "debugpy",
-        "request": "launch",
-        "program": "${workspaceFolder}/radar_object_tracking/radarprocessing/micro_doppler_velocity_analysis.py",
-        "console": "integratedTerminal",
-        },
-        {
-            "name": "Tracking Simple Testing",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/tracking/ObjectTracking.py",
-            "console": "integratedTerminal",
-        },
-        {
-            "name": "Yolo Object Detection - Video M0101",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/yolo_video_object_tracking/detect.py",
-            "console": "integratedTerminal",
-            "args": "--weights ${workspaceFolder}/yolo_video_object_tracking/yolov7.pt --source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --view-img"
-        },
-        {
-            "name": "Yolo Object Detect and Track - Video M0101",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/yolo_video_object_tracking/detect.py",
-            "console": "integratedTerminal",
-            "args": "--weights ${workspaceFolder}/yolo_video_object_tracking/yolov7.pt --source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --view-img"
-        },
-        {
-            "name": "Python Debugger: Current File",
-            "type": "debugpy",
-            "request": "launch",
-            "justMyCode": false,
-            "program": "${file}",
+            "args": "--weights ${workspaceFolder}/yolo_video_object_tracking/yolov7.pt --source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --skip-radar --view-img",
             "console": "integratedTerminal"
         },
+
         {
-            "name": "Debug Jupyter Notebook",
+            "name": "Object Tracking",
             "type": "debugpy",
             "request": "launch",
-            "justMyCode": false,
-            "stopOnEntry": false,
-            "program": "${file}",
-            "cwd": "${workspaceFolder}"
+            "program": "${workspaceFolder}/object_tracking_yolo_v8.py",
+            "console": "integratedTerminal"
         }
     ]
 }
