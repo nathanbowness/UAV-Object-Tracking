@@ -15,7 +15,7 @@ import torch
 from datetime import datetime
 
 # Different tracking programs
-from tracking.ObjectTracking import ObjectTrackingExtendedObjectGNN
+from tracking.ObjectTrackingGmPhd import ObjectTrackingGmPhd
 from radar_object_tracking.configuration.CFARParams import CFARParams
 from radar_object_tracking.configuration.RadarRunParams import RadarRunParams
 from radar_object_tracking.radar_tracking import RadarTracking
@@ -33,7 +33,7 @@ def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_
         
 def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_queue = None):
     
-    tracking = ObjectTrackingExtendedObjectGNN(time.time())
+    tracking = ObjectTrackingGmPhd(time.time())
     count = 1
     
     while not stop_event.is_set():
@@ -47,7 +47,7 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 
                 tracking.update_tracks(detections, timestamp, type=dataType)
                 count += 1
-                if (count % 10 == 0):
+                if (count % 50 == 0):
                     tracking.show_tracks_plot()
             except mp.queues.Empty:
                 pass

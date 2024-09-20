@@ -25,6 +25,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/tracking/ObjectTracking.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "StoneSoup: Tracking GM PHD",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tracking/ObjectTrackingGmPhd.py",
+            "console": "integratedTerminal"
         }
     ]
 }
