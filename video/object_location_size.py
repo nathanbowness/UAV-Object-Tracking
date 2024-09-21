@@ -1,44 +1,29 @@
 import math
 
-class CameraDetails():
-    def __init__(self,
-                 horz_fov : float = 62.7,
-                 covert_bb : float = 1.813851,
-                 zoom_factor : int = 1):
-        """
-        Details of the camera used for object detection.
-        
-        :param horiz_fov_deg (float): horizontal field of view in degrees
-        :param covert_bb (float): coefficient to convert BB width to distance
-        :param zoom_factor (int): zoom factor of the camera
-        """
-        self.horz_fov = horz_fov
-        self.covert_bb = covert_bb
-        self.zoom_factor = zoom_factor
-    
+from video.CameraDetails import CameraDetails
 
-class ImageCharacteristics():
-    def __init__(self, 
-                 image_width : int = 1920,
-                 image_height: int = 1080):
-        self.image_width = image_width
-        self.image_height = image_height
-        self.aspect_ratio = image_width / image_height
+def object_location(top_left_x, top_left_y,bottom_right_x,bottom_right_y, camera_details : CameraDetails, detected_object = "person"):
     """
-    Details of the image characteristics.
+    Given the bounding box coordinates, calculate the object location and size.
     
-    :param image_width (int): width of the image in pixels
-    :param image_height (int): height of the image in pixels
+    :param top_left_x: x-coordinate of the top-left corner of the bounding box
+    :param top_left_y: y-coordinate of the top-left corner of the bounding box
+    :param bottom_right_x: x-coordinate of the bottom-right corner of the bounding box
+    :param bottom_right_y: y-coordinate of the bottom-right corner of the bounding box
+    :param camera_details: A CameraDetails object containing details of the camera.
+    :param detected_object: The type of object detected
     """
     
-
-def object_location(top_left_x, top_left_y,bottom_right_x,bottom_right_y, image_char : ImageCharacteristics, camera_details : CameraDetails):
     # Image, Camera details
-    ImageWidth = image_char.image_width  # Width of the image in pixels
-    ImageHeight = image_char.image_height   # Height of the image in pixels
-    Aspect_ratio = image_char.aspect_ratio  # Aspect ratio of the image
-    ConvertBBToDistanceCoefficent = camera_details.covert_bb  # Anker camera
-    # ConvertBBToDistanceCoefficent = 1.813851  # Coefficient to convert BB width to distance
+    ImageWidth = camera_details.image_width  # Width of the image in pixels
+    ImageHeight = camera_details.image_height   # Height of the image in pixels
+    Aspect_ratio = camera_details.aspect_ratio  # Aspect ratio of the image
+    
+    if detected_object in camera_details.bbCoefficientsMap:
+        ConvertBBToDistanceCoefficent = camera_details.bbCoefficientsMap[detected_object]
+    else: 
+        # Set to default value if the object is not in the map
+        ConvertBBToDistanceCoefficent = 1.813851  # Coefficient to convert BB width to distance
 
     BBWidth=(bottom_right_x-top_left_x + 1)/ImageWidth
     BBHorizontalCenter = (top_left_x + bottom_right_x )/2/ImageWidth

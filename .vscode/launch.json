@@ -16,7 +16,7 @@
             "name": "Yolo V8 Tracking",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/object_tracking_yolo_v8.py",
+            "program": "${workspaceFolder}/video/object_tracking_yolo_v8.py",
             "console": "integratedTerminal"
         },
         {

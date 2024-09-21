@@ -1,0 +1,9 @@
+# File for Bounding Box (BB) Coefficients
+
+# The BB Coefficients are used to determine how far away an object is from the camera.
+# The coefficient is multiplied by the pixel width of the bounding box to determine the distance.
+bbCoefficients:
+  dog: 0.5
+  person: 0.7
+  car: 0.5
+  truck: 0.5

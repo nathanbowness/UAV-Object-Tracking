@@ -1,5 +1,6 @@
 ```
 export PYTHONPATH="$PYTHONPATH:/workspaces/UAV-Object-Tracking/yolo_video_object_tracking"
+export PYTHONPATH="$PYTHONPATH:/workspaces/UAV-Object-Tracking/yolo_video_object_tracking/video"
 export QT_QPA_PLATFORM=offscreen
 sudo apt-get install python3-tk
 

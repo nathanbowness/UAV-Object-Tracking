@@ -8,7 +8,8 @@ import multiprocessing as mp
 import math
 from constants import IMAGE_DETECTION_TYPE
 
-from object_location_size import ImageCharacteristics, CameraDetails, object_location
+from video.object_location_size import CameraDetails, object_location
+from video.VideoConfiguration import VideoConfiguration
 
 def setup_output_folders(output_directory : str, save_raw_img : bool = True, start_time = None):
     """
@@ -45,20 +46,19 @@ def on_predict_batch_end(predictor, start_time):
             print(f"Object: {detected_object}, Confidence { box.conf[0].item()}")
             # print(box)
             
-def detection_from_bbox(yolo_box, detected_object, image_char : ImageCharacteristics, camera_details : CameraDetails):
+def detection_from_bbox(yolo_box, detected_object, camera_details : CameraDetails):
     """
     Calculate the object location and size from the bounding box coordinates.
     
     :param yolo_box: Yolo bounding box definition
     :param detected_object: The object detected
-    :param image_char: An ImageCharacteristics object containing details of the image.
     :param camera_details: A CameraDetails object containing details of the camera.
     :return: Detection object containing the object type and location.
     """
     # print(f"Object: {detected_object}, Confidence { yolo_box.conf[0].item()}")
     
     x1, y1, x2, y2 = yolo_box.xyxy[0].tolist()
-    polar_range_data = object_location(x1, y1, x2, y2, image_char=image_char, camera_details=camera_details)
+    polar_range_data = object_location(x1, y1, x2, y2, camera_details=camera_details, detected_object=detected_object)
     
     # Convert angles from degrees to radians
     az_angle_rad = math.radians(polar_range_data[0])
@@ -74,25 +74,31 @@ def detection_from_bbox(yolo_box, detected_object, image_char : ImageCharacteris
     
     return DetectionDetails(detected_object, [x, 0, y , 0])
     
-def track_objects(args, data_queue : mp.Queue = None):
+def track_objects(stop_event = mp.Event(), video_config = VideoConfiguration, data_queue : mp.Queue = None):
     ### PARAMs to the program
-    model_weights = "yolov8n.pt"
-    save_raw_img = False
-    save_detection_video = True
-    output_directory = "/output"
-    source = "https://youtu.be/LNwODJXcvt4" # tutorial ultralytics
-    source = "/data/video/M0101.mp4" # sample data, cars on road
+    model_weights = video_config.modelWeights
+    save_raw_img = video_config.saveRawImages
+    save_detection_video = video_config.saveProcessedVideo
+    output_directory = video_config.outputDirectory  
+    source = video_config.videoSource
+      
     # source = "https://www.youtube.com/watch?v=CN2m0SfLT9Q" # walking through park
-    confidence_threshold = 0.3
-    iou_threshold = 0.5
-    stream = True
+    # source = "https://www.youtube.com/watch?v=Guk_ql0-ZyM" # walking back and forth
+    # source = "https://www.youtube.com/watch?v=Mol0lrRBy3g"
+    source = "/data/video/M0101.mp4"
+    confidence_threshold = video_config.confidenceThreshold
+    
+    iou_threshold = video_config.iouThreshold
+    stream = video_config.videoStream
     # Graphical show users
-    show_boxes = True
-    show = True
+    show_boxes = video_config.showBoxesInVideo
+    show = video_config.showVideo
     ### END OF PARAMS
     
-    camera = CameraDetails(horz_fov=170)
-    image_char = None
+    if source == "" or source is None:
+        raise Exception("No video source provided. Please provide a source for the video.")
+    
+    camera = video_config.camera_details
     
     output_folder = setup_output_folders(output_directory, save_raw_img)
     model = YOLO(model_weights)
@@ -101,12 +107,11 @@ def track_objects(args, data_queue : mp.Queue = None):
     # save_crops=True # save detected crops as .jpg files, of the individual objects detected
     results = model.track(source=source, conf=confidence_threshold, iou=iou_threshold, save=save_detection_video, show=show, stream=stream, project=output_folder, show_boxes=show_boxes)
 
-    for i, result in enumerate(results):        
+    for i, result in enumerate(results):
+        if stop_event.is_set():
+            break   
         orig_img_h = result.orig_img.shape[0]
         orig_img_w = result.orig_img.shape[1]
-        
-        if image_char is None:
-            image_char = ImageCharacteristics(image_width=orig_img_w, image_height=orig_img_h)
         
         # If configured, saved the original image to disk, in the <output_folder>/raw/*
         if save_raw_img:
@@ -122,7 +127,7 @@ def track_objects(args, data_queue : mp.Queue = None):
             detected_object = result.names[classificationIndex]
             # print(f"Object: {detected_object}, Confidence { box.conf[0].item()}")
             
-            detection = detection_from_bbox(box, detected_object, image_char=image_char, camera_details=camera)
+            detection = detection_from_bbox(box, detected_object, camera_details=camera)
             detections.append(detection)
         
         # If a data_queue is provided, put the detections into the queue
@@ -130,7 +135,8 @@ def track_objects(args, data_queue : mp.Queue = None):
             data_queue.put(DetectionsAtTime(detectionTimestamp, IMAGE_DETECTION_TYPE, detections))
             
         # For debugging purposes, add 1 second delay between frames
-        # time.sleep(1)
+        time.sleep(0.1)
 
 if __name__ == "__main__":
-    track_objects(None)
+    video_config = VideoConfiguration()
+    track_objects(video_config, None)

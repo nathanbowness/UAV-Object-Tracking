@@ -1,0 +1,18 @@
+# File to set up the radar configuration
+
+# Radar signal configuration
+minimumFrequencyMhz: 24000
+maximumFrequencyMhz: 25000
+rampTimeFmcwChirp: 1
+attenuation: 0
+
+# Radar connection configuration
+ethernetPort: 1024
+ethernetIp: "10.0.0.59"
+
+# Radar signal processing configuration
+cfarNumGuard: 2
+cfarNumTrainingCells: 10
+cfarThreshold: 10
+cfarType: "CASO" # Options are CASO, LEADING_EDGE
+

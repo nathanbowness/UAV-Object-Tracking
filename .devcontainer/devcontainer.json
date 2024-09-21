@@ -11,7 +11,8 @@
 		 "-v", "${env:HOME}/.Xauthority:/root/.Xauthority",
 		// Mount output and data folders to allow the containers to copy in/out data
 		 "-v", "${localWorkspaceFolder}/output:/output",
-		 "-v", "${localWorkspaceFolder}/data:/data"
+		 "-v", "${localWorkspaceFolder}/data:/data",
+		 "-v", "${localWorkspaceFolder}/configuration:/configuration"
 		// "--device=/dev/video2:/dev/video0" // required for mounting webcam to the container
 	],
 	"remoteEnv": {

@@ -1,0 +1,23 @@
+# File to configuration the video processing
+
+# Configuration for the Yolo Processing
+modelWeights: "yolov8n.pt"
+saveRawImages: False
+saveProcessedVideo: True
+outputDirectory: "/output"
+videoSource: "https://youtu.be/LNwODJXcvt4"
+confidenceThreshold: 0.3
+iouThreshold: 0.5
+videoStream: True
+
+# Configuration for showing the Live Video During Yolo Processing 
+showBoxesInVideo: True
+showVideo: True
+
+# Camera Details
+cameraHorizontalFOV: 62.2
+cameraZoomFactor: 1.0
+imageWidth: 640
+imageHeight: 480
+
+

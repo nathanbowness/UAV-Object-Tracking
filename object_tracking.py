@@ -12,14 +12,17 @@ import torch
 # import matplotlib.pyplot as plt
 # plt.ion()  # Enable interactive mode
 
+from video.VideoConfiguration import VideoConfiguration
+from tracking.TrackingConfiguration import TrackingConfiguration
+
 from datetime import datetime
 
 # Different tracking programs
-from tracking.ObjectTrackingGmPhd import ObjectTrackingGmPhd
+from tracking.ObjectTrackingGmPhd import get_object_tracking_gm_phd
 from radar_object_tracking.configuration.CFARParams import CFARParams
 from radar_object_tracking.configuration.RadarRunParams import RadarRunParams
 from radar_object_tracking.radar_tracking import RadarTracking
-from object_tracking_yolo_v8 import track_objects
+from video.object_tracking_yolo_v8 import track_objects
 
 
 def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
@@ -31,11 +34,9 @@ def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_
     radar_tracking.object_tracking(stop_event)
     time.sleep(0.1)  # Add a delay to avoid busy-waiting
         
-def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_queue = None):
+def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot_data_queue = None):
     
-    tracking = ObjectTrackingGmPhd(time.time())
     count = 1
-    
     while not stop_event.is_set():
         # Handle image data queue
         while image_data_queue is not None and not image_data_queue.empty():
@@ -45,10 +46,10 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 detections = detectionsAtTime.detections
                 dataType = detectionsAtTime.type
                 
-                tracking.update_tracks(detections, timestamp, type=dataType)
+                tracker.update_tracks(detections, timestamp, type=dataType)
                 count += 1
-                if (count % 50 == 0):
-                    tracking.show_tracks_plot()
+                if (count % 300 == 0):
+                    tracker.show_tracks_plot()
             except mp.queues.Empty:
                 pass
 
@@ -60,7 +61,7 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 
                 if (detections_raw == "DONE"):
                     print("Radar data processing is done.")
-                    tracking.show_tracks_plot()
+                    tracker.show_tracks_plot()
                     break
                 
                 # Extract the array data and time from the detections dictionary
@@ -73,7 +74,7 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 # Convert time_str to datetime object using the provided format                  
                 # timestamp = datetime.strptime(time_str, '%Y-%m-%d %H-%M-%S')
                 
-                tracking.update_tracks(detection_array, timestamp)
+                tracker.update_tracks(detection_array, timestamp)
                 
                 # if (len(tracking.timesteps) % 50 == 0):
                 #     tracking.show_tracks_plot()
@@ -84,6 +85,8 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
             except Exception as e:
                 print(f"Error processing radar data: {e}")
                 pass
+    
+    tracker.show_tracks_plot()
             
 def plot_data(plot_queue: mp.Queue, stop_event):
     # import matplotlib
@@ -189,6 +192,7 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     
     # Create a stop event and a queue for radar_data
+    start_time = time.time()
     stop_event = mp.Event()
     radar_data_queue = None
     image_data_queue = None
@@ -197,29 +201,34 @@ if __name__ == '__main__':
     # plotting process
     if args.enable_plot:
         plot_data_queue = mp.Queue()
+        plot_data(plot_data_queue, stop_event) # Start the plot data process
+        
+    
     
     # Create the radar tracking process
     if not args.skip_radar:
         radar_data_queue = mp.Queue()
-        radar_proc = mp.Process(target=radar_tracking_task, args=(stop_event, args, radar_data_queue, plot_data_queue))
+        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, args, radar_data_queue, plot_data_queue))
         radar_proc.start()
         
     if not args.skip_video:
+        video_config = VideoConfiguration()
         image_data_queue = mp.Queue()
         # Create the video tracking process if it's not skipped
         with torch.no_grad():
-            video_proc = mp.Process(target=track_objects, args=(opt, image_data_queue))
-            video_proc.start()
+            video_proc = mp.Process(name="Video Data Coll.", target=track_objects, args=(stop_event, video_config, image_data_queue))
+            video_proc.start()  
             
     if not args.skip_tracking:
+        tracking_config = TrackingConfiguration()
+        tracker = get_object_tracking_gm_phd(start_time, tracking_config)
+        
         # Queue process to handle incoming data
-        tracking_proc = mp.Process(target=process_queues, args=(stop_event, image_data_queue, radar_data_queue, plot_data_queue))
+        tracking_proc = mp.Process(name="Tracking", target=process_queues, args=(stop_event, tracker, image_data_queue, radar_data_queue, plot_data_queue))
         tracking_proc.start()
     
-    if args.enable_plot:
-        plot_data(plot_data_queue, stop_event) # Start the plot data process
-    
     try:
+        print("Starting the tracking processes.")
         while True:
             user_input = input("Type 'q' and hit ENTER to quit: ")
             if user_input.lower() == 'q':
@@ -232,7 +241,5 @@ if __name__ == '__main__':
             radar_proc.join()
         if not args.skip_video:
             video_proc.join()
-            
-        tracking_proc.join()
 
     print(f"Tracking duration: {time.time() - start_time:.2f} seconds")

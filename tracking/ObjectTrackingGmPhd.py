@@ -38,6 +38,40 @@ from stonesoup.types.array import CovarianceMatrix
 
 from collections import deque 
 
+from tracking.TrackingConfiguration import TrackingConfiguration
+
+def get_object_tracking_gm_phd(start_time, tracking_config: TrackingConfiguration):
+    """
+    Get the object tracking GM PHD filter based on the tracking configuration.
+    
+    Args:
+        start_time (datetime): The start time of the tracking.
+        tracking_config (TrackingConfiguration): The tracking configuration.
+        
+    Returns:
+        ObjectTrackingGmPhd: The object tracking GM PHD filter.
+    """
+    return ObjectTrackingGmPhd(
+        start_time,
+        min_detections_to_cluster=tracking_config.minDetectionsToCluster,
+        cluster_distance=tracking_config.maxDistanceBetweenClusteredObjectsM,
+        track_tail_length=tracking_config.trackTailLength,
+        tracking_meas_area=tracking_config.max_track_distance,
+        max_deque_size=tracking_config.maxTrackQueueSize,
+        # Filter parameters
+        birth_covar=tracking_config.birthCovariance,
+        expected_velocity=tracking_config.expectedVelocity,
+        noise_covar=[tracking_config.noiseCovarianceDistance, tracking_config.noiseCovarianceDistance],
+        default_cov=[tracking_config.defaultCovarianceDistance, tracking_config.defaultConvarianceVelocity, 
+                     tracking_config.defaultCovarianceDistance, tracking_config.defaultConvarianceVelocity],
+        probability_detection=tracking_config.probabilityOfDetection,
+        death_probability=tracking_config.probabilityOfDeath,
+        clutter_rate=tracking_config.clusterRate,
+        merge_threshold=tracking_config.mergeThreshold,
+        prune_threshold=tracking_config.pruneThreshold,
+        state_threshold=tracking_config.stateThreshold
+    )
+
 
 class ObjectTrackingGmPhd():
     """
@@ -49,19 +83,23 @@ class ObjectTrackingGmPhd():
                  cluster_distance: int = 2, 
                  track_tail_length : float = 0.001,
                  tracking_meas_area : int =  200,
+                 max_deque_size: int = 200,
                  birth_covar: int = 5,
-                 expected_velocity: float=1, 
-                 path_min_points: int=3, 
-                 path_points_to_deletion: int=5,
+                 expected_velocity: float=1,
                  noise_covar: list = [1, 1],
                  default_cov: list = [1, 0.3, 1, 0.3],
-                 max_deque_size: int = 200):
+                 probability_detection: float = 0.8,
+                 death_probability: float = 0.01,
+                 clutter_rate: float = 7.0,
+                 merge_threshold: float = 5, # Threshold Squared Mahalanobis distance
+                    prune_threshold: float = 1E-8, # Threshold component weight
+                    state_threshold: float = 0.25
+                 ):
     
         self.start_time = start_time
         self.min_detections_to_cluster = min_detections_to_cluster
         self.track_tail_length = track_tail_length
         self.cluster_distance = cluster_distance
-        self.path_min_points = path_min_points
         self.default_cov = default_cov
         
         self.transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(expected_velocity),
@@ -73,9 +111,6 @@ class ObjectTrackingGmPhd():
         
         # Area in which we look for target. Note that if a target appears outside of this area the
         # filter will not pick up on it.
-        probability_detection = 0.8
-        death_probability = 0.01
-        clutter_rate = 7.0
         meas_range = np.array([[-1, 1], [-1, 1]])*tracking_meas_area
         clutter_spatial_density = clutter_rate/np.prod(np.diff(meas_range))
         
@@ -89,9 +124,7 @@ class ObjectTrackingGmPhd():
                     prob_survival=1-death_probability)
         
         # Initialise a Gaussian Mixture reducer
-        merge_threshold = 5     # Threshold Squared Mahalanobis distance
-        prune_threshold = 1E-8  # Threshold component weight
-        self.state_threshold = 0.25
+        self.state_threshold = state_threshold
         self.reducer = GaussianMixtureReducer(
             prune_threshold=prune_threshold,
             pruning=True,
@@ -196,8 +229,7 @@ class ObjectTrackingGmPhd():
         self.tracker_count += 1
     
     def show_tracks_plot(self):
-        # Need at least 2 time steps to plot
-        if (len(self.timesteps) < self.path_min_points):
+        if (len(self.timesteps) < 5):
             return None
         
         x_min, x_max, y_min, y_max = -200, 200, -200, 200
@@ -213,10 +245,9 @@ class ObjectTrackingGmPhd():
         
 if __name__ == '__main__':
     currentTime = datetime.now()
+    tracking_config = TrackingConfiguration()
     
-    # Add a second to the curent time call it time2
-    time2 = currentTime + timedelta(seconds=1)
-    tracking = ObjectTrackingGmPhd(datetime.now(), path_min_points = 2, path_points_to_deletion=5)
+    tracking = get_object_tracking_gm_phd(currentTime, tracking_config)
     
     # General path create with 4 steady objects
     # tracking.update_tracks(np.array(([1, 1, 1, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=1))

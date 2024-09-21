@@ -1,7 +1,10 @@
 from concurrent.futures import thread
+from typing import List
 import numpy as np
 
 import plotly.io as pio
+
+from DetectionsAtTime import DetectionDetails
 pio.renderers.default = 'browser'
 
 from stonesoup.models.transition.linear import CombinedLinearGaussianTransitionModel, \
@@ -34,9 +37,9 @@ class ObjectTrackingExtendedObjectGNN():
     """
     def __init__(self, 
                  start_time, 
-                 min_detections_to_cluster: int = 2, 
-                 cluster_distance: int = 2, 
-                 track_tail_length : float = 0.01, 
+                 min_detections_to_cluster: int = 1, 
+                 cluster_distance: int = 1, 
+                 track_tail_length : float = 0.3, 
                  capacity: int=1000, 
                  expected_velocity: float=1, 
                  path_min_points: int=3, 
@@ -91,7 +94,7 @@ class ObjectTrackingExtendedObjectGNN():
         
         self.centroid_detections = []
         
-    def update_tracks(self, detections: np.ndarray, timestamp: datetime):
+    def update_tracks(self, detections: List[DetectionDetails], timestamp: datetime, type: str = None):
         """
         detections: Nx4 array of detections, where N is the number of detections
         the 4 columns are [x, x_vel, y, y_vel]
@@ -103,7 +106,8 @@ class ObjectTrackingExtendedObjectGNN():
         detection_set = set()
         
         for detection in detections: # detctions==scans in stone soup
-            detection_x_y = np.array([detection[0], detection[2]])
+            data = detection.data
+            detection_x_y = np.array([data[0], data[2]])
             measurements.append(detection_x_y)
             measurement_set.add(Detection(detection_x_y, timestamp, self.measurement_model))
         
@@ -154,7 +158,7 @@ class ObjectTrackingExtendedObjectGNN():
             tracks.update(current_tracks)
         
         track_plot = AnimatedPlotterly(self.timesteps, tail_length=self.track_tail_length)
-        # track_plot.plot_measurements(self.all_measurements, [0, 2])
+        track_plot.plot_measurements(self.all_measurements, [0, 2])
         
         track_plot.plot_measurements(self.centroid_detections, [0, 2], marker=dict(color='red'),
                                 measurements_label='Cluster centroids')
