@@ -8,7 +8,7 @@
             "name": "Tracking: Video Only",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/object_tracking.py",
+            "program": "${workspaceFolder}/tracking.py",
             "args": "--weights ${workspaceFolder}/yolo_video_object_tracking/yolov7.pt --source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --skip-radar --view-img",
             "console": "integratedTerminal"
         },
@@ -16,7 +16,7 @@
             "name": "Tracking: Radar Only",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/object_tracking.py",
+            "program": "${workspaceFolder}/tracking.py",
             "args": "--skip-video --skip-tracking --radar-from-file --radar-source /data/radar/run1-FD",
             "console": "integratedTerminal"
         },

@@ -243,7 +243,50 @@ class ObjectTrackingGmPhd():
         plotter.fig.update_yaxes(range=[y_min-5, y_max+5])
         plotter.fig.show("browser")
         print("Done plotting.")
+    
+    def find_tracks_remove_older_tracks(self, current_time: datetime = datetime.now(), interval = 10):
+        """
+        Find and remove states from tracks that are older than the last 'interval' seconds.
+        :param current_time: The current time to compare states against.
+        :param interval: The time interval in seconds for filtering states.
+        """
+        # Define the time threshold for filtering states
+        time_threshold = current_time - timedelta(seconds=interval)
         
+         # Define the time threshold for filtering states
+        # Iterate through each track in the deque
+        for track in self.tracks:
+            
+            if track.state.timestamp < time_threshold:
+                track.states = None
+            
+        # Remove the entire track if all states are too old
+        self.tracks = deque([track for track in self.tracks if track.states is not None])
+    
+    def print_current_tracks(self, current_time: datetime = datetime.now(), interval : int = 10):
+        """
+        Print the current tracks with their coordinates.
+        :param current_time: The current time to compare states against.
+        :param interval: The time interval in seconds for filtering states.
+        """
+        
+        self.find_tracks_remove_older_tracks(current_time, interval)
+        print(f"There are currently {len(self.tracks)} tracks.")
+        
+        coordinates = []
+        # Iterate through each tracks, find the x, y coordinates to print the current tracks
+        for track in self.tracks:
+            # Get the first and third elements of the state_vector (assuming it has at least 4 elements)
+            x = track.state.state_vector[0, 0]  # First element
+            y = track.state.state_vector[2, 0]  # Third element
+            # Append the (x, y) pair to the coordinates list
+            coordinates.append((x, y))
+                
+        # Create a formatted string with all coordinates on a single line
+        formatted_coords = ", ".join([f"({coord[0]:.1f}, {coord[1]:.1f})" for coord in coordinates])
+        # formatted_coords = ", ".join([f"(x: {coord[0]:.1f}, y: {coord[1]:.1f})" for coord in coordinates]) # Alternative formatting with x, y labels
+        print(f"Coordinates of current tracks: {formatted_coords}")
+    
 if __name__ == '__main__':
     currentTime = datetime.now()
     tracking_config = TrackingConfiguration()
@@ -285,6 +328,8 @@ if __name__ == '__main__':
     # tracking.update_tracks(np.array(([6, 1, 6, 1], [4.2, 1, 2.2, 1])), currentTime + timedelta(seconds=6))
     # tracking.update_tracks(np.array(([7, 1, 7, 1], [5, 1, 2, 1])), currentTime + timedelta(seconds=7))
     
+    
+    tracking.print_current_tracks(currentTime + timedelta(seconds=15), 10)
     tracking.show_tracks_plot()
     print("complete")
     

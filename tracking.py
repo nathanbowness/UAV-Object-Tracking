@@ -86,6 +86,7 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot
                 print(f"Error processing radar data: {e}")
                 pass
     
+    tracker.print_current_tracks()
     tracker.show_tracks_plot()
             
 def plot_data(plot_queue: mp.Queue, stop_event):
