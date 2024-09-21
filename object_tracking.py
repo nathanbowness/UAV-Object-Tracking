@@ -4,22 +4,25 @@ import multiprocessing as mp
 import time
 import torch
 
-from plots.PlotRadarFrequencyHeatMapDynamic import PlotRadarFrequencyHeatMapDynamic
-from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
-from plots.PlotPolarDynamic import PlotPolarDynamic
-import matplotlib
-matplotlib.use('Qt5Agg') # Required for GUI support on linux
-import matplotlib.pyplot as plt
-plt.ion()  # Enable interactive mode
+# from plots.PlotRadarFrequencyHeatMapDynamic import PlotRadarFrequencyHeatMapDynamic
+# from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
+# from plots.PlotPolarDynamic import PlotPolarDynamic
+# import matplotlib
+# matplotlib.use('Qt5Agg') # Required for GUI support on linux
+# import matplotlib.pyplot as plt
+# plt.ion()  # Enable interactive mode
+
+from video.VideoConfiguration import VideoConfiguration
+from tracking.TrackingConfiguration import TrackingConfiguration
 
 from datetime import datetime
 
 # Different tracking programs
-from tracking.ObjectTracking import ObjectTrackingExtendedObjectGNN
+from tracking.ObjectTrackingGmPhd import get_object_tracking_gm_phd
 from radar_object_tracking.configuration.CFARParams import CFARParams
 from radar_object_tracking.configuration.RadarRunParams import RadarRunParams
 from radar_object_tracking.radar_tracking import RadarTracking
-from yolo_video_object_tracking.detect import detect
+from video.object_tracking_yolo_v8 import track_objects
 
 
 def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
@@ -31,21 +34,22 @@ def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_
     radar_tracking.object_tracking(stop_event)
     time.sleep(0.1)  # Add a delay to avoid busy-waiting
         
-def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_queue = None):
+def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot_data_queue = None):
     
-    tracking = ObjectTrackingExtendedObjectGNN(time.time())
-    
+    count = 1
     while not stop_event.is_set():
         # Handle image data queue
         while image_data_queue is not None and not image_data_queue.empty():
             try:
-                data = image_data_queue.get(timeout=1)  # Add timeout to avoid blocking
+                detectionsAtTime = image_data_queue.get(timeout=1)  # Add timeout to avoid blocking
+                timestamp = detectionsAtTime.timestamp
+                detections = detectionsAtTime.detections
+                dataType = detectionsAtTime.type
                 
-                distances, angles = zip(*[(item['distance'], item['angle']) for item in data])
-                distances, angles = np.array(distances), np.array(angles)  # Convert from tuples to lists
-                plot_data_queue.put({"dist": distances, "angles": angles})             
-                # print(f"Received image data: {data}")
-                # Process the data as needed
+                tracker.update_tracks(detections, timestamp, type=dataType)
+                count += 1
+                if (count % 300 == 0):
+                    tracker.show_tracks_plot()
             except mp.queues.Empty:
                 pass
 
@@ -57,7 +61,7 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 
                 if (detections_raw == "DONE"):
                     print("Radar data processing is done.")
-                    tracking.show_tracks_plot()
+                    tracker.show_tracks_plot()
                     break
                 
                 # Extract the array data and time from the detections dictionary
@@ -70,61 +74,64 @@ def process_queues(stop_event, image_data_queue, radar_data_queue, plot_data_que
                 # Convert time_str to datetime object using the provided format                  
                 # timestamp = datetime.strptime(time_str, '%Y-%m-%d %H-%M-%S')
                 
-                tracking.update_tracks(detection_array, timestamp)
+                tracker.update_tracks(detection_array, timestamp)
                 
                 # if (len(tracking.timesteps) % 50 == 0):
                 #     tracking.show_tracks_plot()
+                count += 1
                 
             except mp.queues.Empty:
                 pass
             except Exception as e:
                 print(f"Error processing radar data: {e}")
                 pass
+    
+    tracker.show_tracks_plot()
             
 def plot_data(plot_queue: mp.Queue, stop_event):
-    import matplotlib
-    matplotlib.use('Qt5Agg')  # Use TkAgg backend for GUI support
-    import matplotlib.pyplot as plt
-    plt.ion()  # Enable interactive mode
-    max_distance_plotted = 60
+    # import matplotlib
+    # matplotlib.use('Qt5Agg')  # Use TkAgg backend for GUI support
+    # import matplotlib.pyplot as plt
+    # plt.ion()  # Enable interactive mode
+    # max_distance_plotted = 60
     
     # polarPlot = PlotPolarDynamic(min_angle=-90, max_angle=90, max_distance=40, interval=50)
-    detectionsPlot = PlotDetectionsDynamic(num_plots=2, plot_titles=["Rx1 Detections", "Rx2 Detections"], interval=50, max_bins=512)
-    heatMapPlot = PlotRadarFrequencyHeatMapDynamic(title="Raw FD Data Heatmap", range_bin_size=0.199861, min_distance=5, max_distance=max_distance_plotted)
+    # detectionsPlot = PlotDetectionsDynamic(num_plots=2, plot_titles=["Rx1 Detections", "Rx2 Detections"], interval=50, max_bins=512)
+    # heatMapPlot = PlotRadarFrequencyHeatMapDynamic(title="Raw FD Data Heatmap", range_bin_size=0.199861, min_distance=5, max_distance=max_distance_plotted)
     
-    heatMapPlotFreq = PlotRadarFrequencyHeatMapDynamic(title="MicroDop Freq", range_bin_size=0.199861, min_limit=0, max_limit=0.5, min_distance=5, max_distance=max_distance_plotted)
-    heatMapPlotVelocity = PlotRadarFrequencyHeatMapDynamic(title="Velocity", range_bin_size=0.199861, min_limit=-2, max_limit=1, min_distance=5, max_distance=max_distance_plotted)
+    # heatMapPlotFreq = PlotRadarFrequencyHeatMapDynamic(title="MicroDop Freq", range_bin_size=0.199861, min_limit=0, max_limit=0.5, min_distance=5, max_distance=max_distance_plotted)
+    # heatMapPlotVelocity = PlotRadarFrequencyHeatMapDynamic(title="Velocity", range_bin_size=0.199861, min_limit=-2, max_limit=1, min_distance=5, max_distance=max_distance_plotted)
     
-    plt.show(block=False)  # Show the plot window without blocking
-    plt.pause(0.1)
-    count = 0
+    # plt.show(block=False)  # Show the plot window without blocking
+    # plt.pause(0.1)
+    # count = 0
 
     while not stop_event.is_set():
         while plot_queue is not None and not plot_queue.empty():
             try:                
                 plot_data = plot_queue.get(timeout=1)
-                if (plot_data["type"] == "detections"):
-                    detections_data = plot_data["data"]
-                    detectionsPlot.update_data([detections_data["Rx1"], detections_data["Rx2"]])
+                # if (plot_data["type"] == "detections"):
+                #     detections_data = plot_data["data"]
+                #     detectionsPlot.update_data([detections_data["Rx1"], detections_data["Rx2"]])
                     
-                elif (plot_data["type"] == "polar"):
-                    distances, angles = plot_data["dist"], plot_data["angles"]
-                    # polarPlot.update_data(distances, angles, clear=True)
+                # elif (plot_data["type"] == "polar"):
+                #     distances, angles = plot_data["dist"], plot_data["angles"]
+                #     # polarPlot.update_data(distances, angles, clear=True)
                     
-                elif (plot_data["type"] == "magnitude"):
-                    magnitude_data = plot_data["data"]
-                    time = plot_data["relativeTimeSec"]
-                    heatMapPlot.update_data(time, magnitude_data)
+                # elif (plot_data["type"] == "magnitude"):
+                #     magnitude_data = plot_data["data"]
+                #     time = plot_data["relativeTimeSec"]
+                #     heatMapPlot.update_data(time, magnitude_data)
                     
-                elif (plot_data["type"] == "microFreq"):
-                    magnitude_data = plot_data["data"]
-                    time = plot_data["relativeTimeSec"]
-                    heatMapPlotFreq.update_data(time, magnitude_data)
+                # elif (plot_data["type"] == "microFreq"):
+                #     magnitude_data = plot_data["data"]
+                #     time = plot_data["relativeTimeSec"]
+                #     heatMapPlotFreq.update_data(time, magnitude_data)
                     
-                elif (plot_data["type"] == "velocity"):
-                    magnitude_data = plot_data["data"]
-                    time = plot_data["relativeTimeSec"]
-                    heatMapPlotVelocity.update_data(time, magnitude_data)
+                # elif (plot_data["type"] == "velocity"):
+                #     magnitude_data = plot_data["data"]
+                #     time = plot_data["relativeTimeSec"]
+                #     heatMapPlotVelocity.update_data(time, magnitude_data)
                     
                 plt.pause(0.1)
                 
@@ -185,6 +192,7 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     
     # Create a stop event and a queue for radar_data
+    start_time = time.time()
     stop_event = mp.Event()
     radar_data_queue = None
     image_data_queue = None
@@ -193,29 +201,34 @@ if __name__ == '__main__':
     # plotting process
     if args.enable_plot:
         plot_data_queue = mp.Queue()
+        plot_data(plot_data_queue, stop_event) # Start the plot data process
+        
+    
     
     # Create the radar tracking process
     if not args.skip_radar:
         radar_data_queue = mp.Queue()
-        radar_proc = mp.Process(target=radar_tracking_task, args=(stop_event, args, radar_data_queue, plot_data_queue))
+        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, args, radar_data_queue, plot_data_queue))
         radar_proc.start()
         
     if not args.skip_video:
+        video_config = VideoConfiguration()
         image_data_queue = mp.Queue()
         # Create the video tracking process if it's not skipped
         with torch.no_grad():
-            video_proc = mp.Process(target=detect, args=(opt, False, image_data_queue))
-            video_proc.start()
+            video_proc = mp.Process(name="Video Data Coll.", target=track_objects, args=(stop_event, video_config, image_data_queue))
+            video_proc.start()  
             
     if not args.skip_tracking:
+        tracking_config = TrackingConfiguration()
+        tracker = get_object_tracking_gm_phd(start_time, tracking_config)
+        
         # Queue process to handle incoming data
-        tracking_proc = mp.Process(target=process_queues, args=(stop_event, image_data_queue, radar_data_queue, plot_data_queue))
+        tracking_proc = mp.Process(name="Tracking", target=process_queues, args=(stop_event, tracker, image_data_queue, radar_data_queue, plot_data_queue))
         tracking_proc.start()
     
-    if args.enable_plot:
-        plot_data(plot_data_queue, stop_event) # Start the plot data process
-    
     try:
+        print("Starting the tracking processes.")
         while True:
             user_input = input("Type 'q' and hit ENTER to quit: ")
             if user_input.lower() == 'q':
@@ -228,7 +241,5 @@ if __name__ == '__main__':
             radar_proc.join()
         if not args.skip_video:
             video_proc.join()
-            
-        # tracking_proc.join()
 
     print(f"Tracking duration: {time.time() - start_time:.2f} seconds")

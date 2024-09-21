@@ -1,52 +1,72 @@
-# UAV-Object-Tracking (CSI 6900)
+# Object Tracking using Yolov8 and FMCW Radar
 
-Currently in progress. But this project's goal is to create software that can be used to track UAV using both live Radar Sensor data and Video.  
+Currently in progress. But this project's goal is to create software that can be used to track UAV using both live Radar Sensor data and Video.
+This is done as part of a CSI 6900 project.
 
-# Setup Requirements - Using Docker and VSCode
-- If you have Docker installed on your computer, you can leverage developer containers to quickly run this project.
-- You need to install the VS Code "Dev Containers" extension. After that, you can re-open the repository in a container with all dependencies included. 
-
-# Setup Requirements
-- If you are running this on your computer, you will need the following two pieces installed:
-  1. Python 3.8
-  2. Pip
-- Once you have those two installed run `pip install -r requirements.txt` or setup a virtual environment for the project using 
+# Development
+Please see the [Development Environment](./docs/devEnviroment.md) Documentation for more details on running this locally.
 
 # Usage:
-```
-export PYTHONPATH="$PYTHONPATH:/workspaces/UAV-Object-Tracking/yolo_video_object_tracking"
-export QT_QPA_PLATFORM=offscreen
-sudo apt-get install python3-tk
+```python
 
-python3 object_tracking.py --weights yolo_video_object_tracking/yolov7.pt --source data/video/M0101.mp4 --conf-thres 0.4 --no-download --view-img
+# Run the tracking using an mp4 video, disable the radar tracking portion
+python3 object_tracking.py --weights yolov8n.pt --source data/video/M0101.mp4 --conf-thres 0.4 --no-download --view-img --skip-radar
 
-# Run just the radar tracking from recorded data
-python3 object_tracking.py --weights yolo_video_object_tracking/yolov7.pt --source data/video/M0101.mp4 --conf-thres 0.4 --no-download --view-img --skip-video --radar-from-file --radar-source data/radar/run1_FD
+# Run the tracking using a youtube link, disable the radar tracking portion
+python3 object_tracking.py --weights yolov8n.pt --source "https://youtu.be/LNwODJXcvt4" --conf-thres 0.4 --no-download --view-img --skip-radar
 
-# Debugging
-pip uninstall opencv-python
-pip install opencv-python-headless
-# Fix issues
-export QT_QPA_PLATFORM=offscreen
-apt install libxcb-cursor0 # / Maybe??
-
-python object_tracking.py --radar-only
-python object_tracking.py --video-only
-python object_tracking.py --show-plots
+# Run just the radar tracking from recorded radar data
+python3 object_tracking.py --weights yolov8n.pt --no-download --view-img --skip-video --radar-from-file --radar-source data/radar/run1_FDs
 ```
 
-# Connect a Webcam (Windows Machine)
-Since this project is expected to run in a Developer Container, the container must have access to a webcam to properly work.
+# Folder Structure
+This project uses the Ultrlytics images as the [base images](https://github.com/ultralytics/ultralytics/tree/main/docker) for this project. Specifically it uses the normal Dockerfile and the [Dockerfile](https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile) and the [Dockerfile-jetson-jetpack5](https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile-jetson-jetpack5)
 
-On windows the main way to run developer containers is to run them using WSL. Therefore the webcam must be accessible to your WSL instance. To do this, follow the instructions below. More details can be found on this webpage - [Microsoft - Connect USB Devices to WSL](https://learn.microsoft.com/en-us/windows/wsl/connect-usb#attach-a-usb-device)
+This project rebuilds a new image that add some additional python projects into the `tracking` directory. It will also suggests mounting volumes for `data`, `configuration` and `output` to attach precollected data to process, add configuration options and gather output files mounted to your machine respectively.
 
-1. List all USB devices connected to Windows by openning powershell in Admin mode and entering this command:
-  ```usbipd list```
-2. Before attaching the USB device, the command usbipd bind must be used to share the device, allowing it to be attached to WSL. Select the bus ID of the device you would like to use in WSL and run the following command:
-  ```usbipd bind --busid 4-4```
-3. To attach the USB device, run the following command. (You no longer need to use an elevated administrator prompt.) Ensure that a WSL command prompt is open in order to keep the WSL 2 lightweight VM active: 
-  ```usbipd attach --wsl --busid <busid>```
-4. Open Ubuntu (or your preferred WSL command line) and list the attached USB devices using the command:
-  ```lsusb```
-5. Once you are done using the device in WSL, you can either physically disconnect the USB device or run this command from PowerShell:
-  ```usbipd detach --busid <busid>```
+For more explict details on the folder structure, and the overview of the configuration options please see [Configuration](./docs/configuration.md) of the docs.
+
+# Data Processing
+
+```mermaid
+flowchart LR
+    %% Class definition to allow for bigger icon pictures
+    classDef bigNode font-size:24px;
+
+    subgraph tracking["Tracking.py"]
+        %%  Radar Processing SubGraph
+        subgraph radarProc["**Radar_process.py**"]
+            style desc1 text-align:left
+            desc1["`1 Collect Data
+            2 Data Processing
+            3 Put detection into Queue`"]
+        end
+
+        %%  Image Processing SubGraph
+        subgraph imageProc["`**Image_process.py**`"]
+            style desc2 text-align:left
+            desc2["`1 Collect Image
+            2 Data Processing
+            3 Put detection into Queue`"]
+        end
+        Queue[["MP Queue"]]
+        subgraph trackProc["`**Object_tracking.py**`"]
+            style desc3 text-align:left
+            desc3["`1 Collect Image
+            2 Data Processing
+            3 Put detection into Queue`"]
+        end
+    end
+    Radar["fa:fa-satellite-dish"]:::bigNode
+    Video["fa:fa-camera"]:::bigNode
+
+    Radar <--> radarProc
+    Video <--> imageProc
+    radarProc --> Queue
+    imageProc --> Queue
+    Queue -- Data read from Queue --> trackProc
+```
+
+# Helpful Notes
+* [Connecting a Windows Webcam to WSL to enable usage in a container](./docs/connectWebcamToWsl.md)
+* [Some On Going Dev Notes](./docs/devNotes.md)

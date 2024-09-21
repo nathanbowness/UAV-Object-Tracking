@@ -1,9 +1,10 @@
 {
     "python.analysis.extraPaths": [
-        "./radarprocessing",
         "./configuration",
         "./plots",
         "./tracking",
-        "./yolo_video_object_tracking"
+        "/ultralytics",
+        "./radar_object_tracking",
+        "./video"
     ]
 }
