@@ -19,9 +19,9 @@ from datetime import datetime
 
 # Different tracking programs
 from tracking.ObjectTrackingGmPhd import get_object_tracking_gm_phd
-from radar_object_tracking.configuration.CFARParams import CFARParams
-from radar_object_tracking.configuration.RadarRunParams import RadarRunParams
-from radar_object_tracking.radar_tracking import RadarTracking
+from radar_tracking.configuration.CFARParams import CFARParams
+from radar_tracking.configuration.RadarRunParams import RadarRunParams
+from radar_tracking.radar_tracking import RadarTracking
 from video.object_tracking_yolo_v8 import track_objects
 
 

@@ -5,12 +5,12 @@ import numpy as np
 
 import multiprocessing as mp
 
-from radar_object_tracking.cfar import get_range_bin_for_indexs
-from radar_object_tracking.configuration.RunType import RunType
-from radar_object_tracking.configuration.RadarRunParams import RadarRunParams
-from radar_object_tracking.radarprocessing.FDDataMatrix import FDSignalType
-from radar_object_tracking.radarprocessing.RadarDataWindow import RadarDataWindow
-from radar_object_tracking.radarprocessing.radar_fd_textdata_parser import read_columns
+from radar_tracking.cfar import get_range_bin_for_indexs
+from radar_tracking.configuration.RunType import RunType
+from radar_tracking.configuration.RadarRunParams import RadarRunParams
+from radar_tracking.radarprocessing.FDDataMatrix import FDSignalType
+from radar_tracking.radarprocessing.RadarDataWindow import RadarDataWindow
+from radar_tracking.radarprocessing.radar_fd_textdata_parser import read_columns
 
 class RadarTracking():
     def __init__(self, radar_run_params: RadarRunParams, radar_data_queue: mp.Queue = None, plot_data_queue: mp.Queue = None):

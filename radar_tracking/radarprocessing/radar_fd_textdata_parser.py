@@ -6,7 +6,7 @@ from datetime import datetime
 
 from config import get_radar_params
 from constants import SPEED_LIGHT, DIST_BETWEEN_ANTENNAS
-from radar_object_tracking.radarprocessing.FDDataMatrix import FDDataMatrix
+from radar_tracking.radarprocessing.FDDataMatrix import FDDataMatrix
 
 
 def extract_timestamp_from_filename(filename):

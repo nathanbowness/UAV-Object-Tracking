@@ -13,17 +13,18 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Tracking: Radar Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/object_tracking.py",
+            "args": "--skip-video --skip-tracking --radar-from-file --radar-source /data/radar/run1-FD",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Yolo V8 Tracking",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/video/object_tracking_yolo_v8.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "StoneSoup: Tracking Tests",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/tracking/ObjectTracking.py",
             "console": "integratedTerminal"
         },
         {

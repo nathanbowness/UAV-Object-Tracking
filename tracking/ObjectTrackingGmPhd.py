@@ -101,6 +101,7 @@ class ObjectTrackingGmPhd():
         self.track_tail_length = track_tail_length
         self.cluster_distance = cluster_distance
         self.default_cov = default_cov
+        self.tracking_meas_area = tracking_meas_area
         
         self.transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(expected_velocity),
                                                                        ConstantVelocity(expected_velocity)])
@@ -232,7 +233,7 @@ class ObjectTrackingGmPhd():
         if (len(self.timesteps) < 5):
             return None
         
-        x_min, x_max, y_min, y_max = -200, 200, -200, 200
+        x_min, x_max, y_min, y_max = -self.tracking_meas_area, self.tracking_meas_area, -self.tracking_meas_area, self.tracking_meas_area
         
         # Plot the tracks
         plotter = AnimatedPlotterly(list(self.timesteps), tail_length=0.6)

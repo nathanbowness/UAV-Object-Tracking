@@ -1,10 +1,10 @@
 from collections import deque
-from radar_object_tracking.cfar import cfar_single, cfar_required_cells
+from radar_tracking.cfar import cfar_single, cfar_required_cells
 from constants import SPEED_LIGHT
-from radar_object_tracking.radarprocessing.FDDataMatrix import FDDataMatrix, FDSignalType
+from radar_tracking.radarprocessing.FDDataMatrix import FDDataMatrix, FDSignalType
 from config import RadarRunParams, CFARParams
 
-from radar_object_tracking.radarprocessing.micro_doppler_velocity_analysis import micro_doppler_analysis, calculate_velocity
+from radar_tracking.radarprocessing.micro_doppler_velocity_analysis import micro_doppler_analysis, calculate_velocity
 
 import numpy as np
 import pandas as pd

@@ -7,10 +7,10 @@ from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
 from plots.PlotPolarDynamic import PlotPolarDynamic
 from plots.PlottingLiveData import PlottingLiveData
 
-from radar_object_tracking.configuration import RadarRunParams
+from radar_tracking.configuration import RadarRunParams
 from config import RadarRunParams, get_run_params, get_plot_config, get_radar_module
 
-from radar_object_tracking.cfar import get_range_bin_for_indexs
+from radar_tracking.cfar import get_range_bin_for_indexs
 from radarprocessing.FDDataMatrix import FDSignalType
 from radarprocessing.RadarDataWindow import RadarDataWindow
 from radarprocessing.get_all_sensor_data import get_fd_data_from_radar

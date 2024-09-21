@@ -5,9 +5,9 @@ Created on 02.10.2015
 '''
 
 import time
-from radar_object_tracking.RadarDevKit.Interfaces import ConversionFuncs as conv
-from radar_object_tracking.RadarDevKit.Interfaces.Commands import Commands
-from radar_object_tracking.RadarDevKit.Interfaces.Commands import CommandError
+from radar_tracking.RadarDevKit.Interfaces import ConversionFuncs as conv
+from radar_tracking.RadarDevKit.Interfaces.Commands import Commands
+from radar_tracking.RadarDevKit.Interfaces.Commands import CommandError
 
 
 class IPCommands(Commands):
