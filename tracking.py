@@ -24,7 +24,6 @@ from radar_tracking.configuration.RadarRunParams import RadarRunParams
 from radar_tracking.radar_tracking import RadarTracking
 from video.object_tracking_yolo_v8 import track_objects
 
-
 def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
    
     cfar_params = CFARParams(num_guard=10, num_train=15, threshold=12, threshold_is_percentage=False)
@@ -75,6 +74,7 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot
                 # timestamp = datetime.strptime(time_str, '%Y-%m-%d %H-%M-%S')
                 
                 tracker.update_tracks(detection_array, timestamp)
+                tracker.print_current_tracks(interval = 1) # remove tracks older than 1 second for now
                 
                 # if (len(tracking.timesteps) % 50 == 0):
                 #     tracking.show_tracks_plot()
@@ -188,6 +188,8 @@ if __name__ == '__main__':
     parser.add_argument('--enable-plot', action='store_true', help='enable plotting')
     parser.add_argument('--radar-from-file', action='store_true', help='use radar data from file')
     parser.add_argument('--radar-source', type=str, default='data/radar', help='source folder to pull the radar data from. Only used if "radar-from-file" is set')
+    parser.add_argument('--video-config', type=str, default='/configuration/VideoConfig.yaml', help='video configuration file')
+    
     parser.set_defaults(download=True)
     args = parser.parse_args()
     opt = parser.parse_args()
@@ -203,7 +205,6 @@ if __name__ == '__main__':
     if args.enable_plot:
         plot_data_queue = mp.Queue()
         plot_data(plot_data_queue, stop_event) # Start the plot data process
-        
     
     
     # Create the radar tracking process
@@ -213,7 +214,8 @@ if __name__ == '__main__':
         radar_proc.start()
         
     if not args.skip_video:
-        video_config = VideoConfiguration()
+        video_config = VideoConfiguration(config_path=args.video_config)
+        
         image_data_queue = mp.Queue()
         # Create the video tracking process if it's not skipped
         with torch.no_grad():
@@ -242,5 +244,7 @@ if __name__ == '__main__':
             radar_proc.join()
         if not args.skip_video:
             video_proc.join()
+            
+    tracking_proc.join()
 
     print(f"Tracking duration: {time.time() - start_time:.2f} seconds")

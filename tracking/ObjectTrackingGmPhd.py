@@ -280,6 +280,8 @@ class ObjectTrackingGmPhd():
             x = track.state.state_vector[0, 0]  # First element
             y = track.state.state_vector[2, 0]  # Third element
             # Append the (x, y) pair to the coordinates list
+            if abs(x) == 0 and abs(y) == 0:
+                continue
             coordinates.append((x, y))
                 
         # Create a formatted string with all coordinates on a single line

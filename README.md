@@ -89,5 +89,5 @@ flowchart LR
 ```
 
 # Helpful Notes
-* [Connecting a Windows Webcam to WSL to enable usage in a container](./docs/connectWebcamToWsl.md)
+* [Using a Webcam with the container, and connecting a webcam to WSL](./docs/usingWebcamInContainers.md)
 * [Some On Going Dev Notes](./docs/devNotes.md)

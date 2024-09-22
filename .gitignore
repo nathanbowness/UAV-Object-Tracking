@@ -167,8 +167,10 @@ stonesoup_tutorials/*
 # Models
 *.pt
 
-# Test videos
+# Test videos, images, yamls
 *.mp4
+video/*.jpg
+video/*.yaml
 
 # Ignore all data samples used for testing, and output folder from that testing
 data/

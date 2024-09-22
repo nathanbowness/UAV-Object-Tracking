@@ -64,6 +64,7 @@ def detection_from_bbox(yolo_box, detected_object, camera_details : CameraDetail
     az_angle_rad = math.radians(polar_range_data[0])
     el_angle_rad = math.radians(polar_range_data[1])
     distance = polar_range_data[2]
+    print(f"Object: {detected_object}, Distance: {distance}, Azimuth Deg: {polar_range_data[0]}, Elevation Deg: {polar_range_data[1]}")
     
     # Calculate the horizontal distance (on the ground)
     distance_horizontal = distance * math.cos(el_angle_rad)
@@ -71,6 +72,7 @@ def detection_from_bbox(yolo_box, detected_object, camera_details : CameraDetail
     # Calculate x (horizontal) and y (vertical) distances
     x = distance_horizontal * math.sin(az_angle_rad)  # Horizontal distance in the x direction
     y = distance * math.sin(el_angle_rad)  # Vertical distance in the y direction
+    
     
     return DetectionDetails(detected_object, [x, 0, y , 0])
     
@@ -81,11 +83,7 @@ def track_objects(stop_event = mp.Event(), video_config = VideoConfiguration, da
     save_detection_video = video_config.saveProcessedVideo
     output_directory = video_config.outputDirectory  
     source = video_config.videoSource
-      
-    # source = "https://www.youtube.com/watch?v=CN2m0SfLT9Q" # walking through park
-    # source = "https://www.youtube.com/watch?v=Guk_ql0-ZyM" # walking back and forth
-    # source = "https://www.youtube.com/watch?v=Mol0lrRBy3g"
-    source = "/data/video/M0101.mp4"
+
     confidence_threshold = video_config.confidenceThreshold
     
     iou_threshold = video_config.iouThreshold
@@ -128,6 +126,7 @@ def track_objects(stop_event = mp.Event(), video_config = VideoConfiguration, da
             # print(f"Object: {detected_object}, Confidence { box.conf[0].item()}")
             
             detection = detection_from_bbox(box, detected_object, camera_details=camera)
+            
             detections.append(detection)
         
         # If a data_queue is provided, put the detections into the queue

@@ -5,11 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Tracking: Video Only",
+            "name": "Tracking: Video Only - Local Video",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
             "args": "--weights ${workspaceFolder}/yolo_video_object_tracking/yolov7.pt --source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --conf-thres 0.4 --no-download --skip-radar --view-img",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Tracking: Video Only - Webcam",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tracking.py",
+            "args": "--video-config /configuration/VideoConfig_AnkerCamera.yaml --conf-thres 0.4 --no-download --skip-radar --view-img",
             "console": "integratedTerminal"
         },
         {
