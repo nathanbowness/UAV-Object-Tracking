@@ -5,7 +5,8 @@ modelWeights: "yolov8n.pt"
 saveRawImages: False
 saveProcessedVideo: True
 outputDirectory: "/output"
-videoSource: "https://youtu.be/LNwODJXcvt4"
+# videoSource: "https://youtu.be/LNwODJXcvt4"
+videoSource: "/data/video/M0101.mp4"
 confidenceThreshold: 0.3
 iouThreshold: 0.5
 videoStream: True
@@ -15,9 +16,9 @@ showBoxesInVideo: True
 showVideo: True
 
 # Camera Details
-cameraHorizontalFOV: 62.2
+cameraHorizontalFOV: 170
 cameraZoomFactor: 1.0
 imageWidth: 640
-imageHeight: 480
+imageHeight: 352
 
 

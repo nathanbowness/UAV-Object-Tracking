@@ -4,7 +4,7 @@
         "./plots",
         "./tracking",
         "/ultralytics",
-        "./radar_object_tracking",
+        "./radar_tracking",
         "./video"
     ]
 }

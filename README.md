@@ -6,17 +6,38 @@ This is done as part of a CSI 6900 project.
 # Development
 Please see the [Development Environment](./docs/devEnviroment.md) Documentation for more details on running this locally.
 
+# Run in Docker
+This project can be fully run and configured from a docker container. Follow the steps below to get the image build and running in a container.
+
+## Building the Container
+```bash
+# Build conatiner for linux
+docker build . -t tracking-image
+
+# Build container for jetson-jetpack5
+docker build . -f Dockerfile-jetson-jetpack5 tracking-image-jetson
+```
+
+## Running the Container
+```bash
+# Interactively launch the container. Example has configuration, data and output volumes mounted. Then you can run commands as you'd like.
+docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image
+
+# Run the tracking software
+docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -it tracking-image python3 tracking.py --skip-radar --view-img
+```
+
 # Usage:
 ```python
 
 # Run the tracking using an mp4 video, disable the radar tracking portion
-python3 object_tracking.py --weights yolov8n.pt --source data/video/M0101.mp4 --conf-thres 0.4 --no-download --view-img --skip-radar
+python3 tracking.py --weights yolov8n.pt --source data/video/M0101.mp4 --conf-thres 0.4 --no-download --view-img --skip-radar
 
 # Run the tracking using a youtube link, disable the radar tracking portion
-python3 object_tracking.py --weights yolov8n.pt --source "https://youtu.be/LNwODJXcvt4" --conf-thres 0.4 --no-download --view-img --skip-radar
+python3 tracking.py --weights yolov8n.pt --source "https://youtu.be/LNwODJXcvt4" --conf-thres 0.4 --no-download --view-img --skip-radar
 
 # Run just the radar tracking from recorded radar data
-python3 object_tracking.py --weights yolov8n.pt --no-download --view-img --skip-video --radar-from-file --radar-source data/radar/run1_FDs
+python3 tracking.py --weights yolov8n.pt --no-download --view-img --skip-video --radar-from-file --radar-source data/radar/run1_FDs
 ```
 
 # Folder Structure
@@ -68,5 +89,5 @@ flowchart LR
 ```
 
 # Helpful Notes
-* [Connecting a Windows Webcam to WSL to enable usage in a container](./docs/connectWebcamToWsl.md)
+* [Using a Webcam with the container, and connecting a webcam to WSL](./docs/usingWebcamInContainers.md)
 * [Some On Going Dev Notes](./docs/devNotes.md)
