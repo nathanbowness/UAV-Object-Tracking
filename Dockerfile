@@ -1,4 +1,4 @@
-FROM ultralytics/ultralytics:8.2.93
+FROM ultralytics/ultralytics:8.2.103
 
 ENV PROJECT_PATH=/tracking/UAV-Object-Tracking
 
@@ -14,7 +14,7 @@ COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 
 # Copy over folders
-COPY ./radar_tracking ./radar_tracking
+COPY ./radar ./radar
 COPY ./tracking ./tracking
 COPY ./plots ./plots
 COPY ./video ./video
@@ -27,7 +27,7 @@ COPY ./tracking.py .
 COPY ./constants.py .
 COPY ./config.py .
 
-# Copy over configuration
+# Copy over the default configuration, but this can be overwritten by the user
 RUN mkdir -p /configuration
 COPY ./configuration /configuration
 

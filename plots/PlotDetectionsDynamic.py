@@ -7,7 +7,7 @@ plt.ion()
 from matplotlib.animation import FuncAnimation
 
 import numpy as np
-from radar_tracking.cfar import get_range_bins
+from radar.cfar import get_range_bins
 
 class PlotDetectionsDynamic:
     def __init__(self, bin_size=0.27, num_plots=2, plot_titles=["Plot1", "Plot2"], max_steps=50, x_axis_values=512, max_bins=512, interval=1000):

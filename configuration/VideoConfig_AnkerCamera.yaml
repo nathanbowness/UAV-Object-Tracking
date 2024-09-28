@@ -2,7 +2,7 @@
 
 # Configuration for the Yolo Processing
 modelWeights: "yolov8n.pt"
-saveRawImages: False
+saveRawImages: True
 saveProcessedVideo: True
 outputDirectory: "/output"
 videoSource: "0"

@@ -18,14 +18,31 @@ docker build . -t tracking-image
 docker build . -f Dockerfile-jetson-jetpack5 tracking-image-jetson
 ```
 
-## Running the Container
+## Running the Container On WSL, Linux
 ```bash
-# Interactively launch the container. Example has configuration, data and output volumes mounted. Then you can run commands as you'd like.
-docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image
+# Interactively launch the container. Example has configuration, data and output volumes mounted. Then you can run commands as you'd like. NOTE this has no UI elements only console
+docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image --gpus device=0
 
-# Run the tracking software
-docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -it tracking-image python3 tracking.py --skip-radar --view-img
+# Run elements, non interactive
+docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output tracking-image python3 tracking.py --skip-radar
+
+# Run with UI elements active.
+xhost +local:docker && docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v ~/.Xauthority:/root/.Xauthority -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image
+
+
+# Run the tracking software using local webcam, with no UI elements active
+docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -it tracking-image python3 tracking.py --skip-radar --view-img --device=/dev/video0:/dev/video0 --video-config /configuration/VideoConfig_AnkerCamera.yaml 
 ```
+
+## Running the Container On Jetson
+When running on Jetson. Jetson equips iGPU rather than the dGPU. The OS is also a customized l4t rather than standard Linux. You can use --runtime=nvidia and by default, it will enable GPU for usage.
+```bash
+# Run the container interactively
+docker run -v "$(pwd)"/data:/data  --runtime=nvidia -it tracking-image-json
+```
+
+### Easily overwrite configuration in the container
+* Details about overwriting this.. How to change config, etc....
 
 # Usage:
 ```python

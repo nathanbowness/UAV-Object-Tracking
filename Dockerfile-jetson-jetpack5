@@ -1,4 +1,4 @@
-FROM ultralytics/ultralytics:8.2.93-jetson-jetpack5
+FROM ultralytics/ultralytics:8.2.103-jetson-jetpack5
 
 ENV PROJECT_PATH=/tracking/UAV-Object-Tracking
 
@@ -14,7 +14,7 @@ COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 
 # Copy over folders
-COPY ./radar_tracking ./radar_tracking
+COPY ./radar ./radar
 COPY ./tracking ./tracking
 COPY ./plots ./plots
 COPY ./video ./video
