@@ -3,8 +3,8 @@ FROM ultralytics/ultralytics:8.2.103-jetson-jetpack5
 ENV PROJECT_PATH=/tracking/UAV-Object-Tracking
 
 # Setup working DIR
-RUN mkdir -p /tracking
-RUN mkdir -p $PROJECT_PATH
+RUN sudo mkdir -p /tracking
+RUN sudo mkdir -p $PROJECT_PATH
 WORKDIR $PROJECT_PATH
 
 # Copy base files that are required
@@ -28,8 +28,8 @@ COPY ./constants.py .
 COPY ./config.py .
 
 # Copy over configuration
-RUN mkdir -p /configuration
+RUN sudo mkdir -p /configuration
 COPY ./configuration /configuration
 
 # Add /data to allow for mounting incoming data into the container
-RUN mkdir /data
+RUN sudo mkdir /data
