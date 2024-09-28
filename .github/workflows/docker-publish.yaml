@@ -8,11 +8,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout code from the master branch
-      - name: Checkout master branch
+      # Step 1: Checkout code from the branch
+      - name: Checkout branch
         uses: actions/checkout@v3
-        with:
-          ref: master
 
       # Step 2: Log in to DockerHub using secrets
       - name: Log in to DockerHub
