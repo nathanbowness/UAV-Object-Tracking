@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-from radar_tracking.cfar import get_range_bin_indexes
+from radar.cfar import get_range_bin_indexes
 
 class PlotRadarFrequencyHeatMapDynamic:
     def __init__(self, title, min_distance=0, max_distance=None, range_bin_size=0.2499, max_steps=50, min_limit=-60, max_limit=20):

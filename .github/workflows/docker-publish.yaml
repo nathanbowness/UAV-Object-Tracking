@@ -1,0 +1,39 @@
+name: Build and Publish Docker Images Manually
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code from the master branch
+      - name: Checkout master branch
+        uses: actions/checkout@v3
+        with:
+          ref: master
+
+      # Step 2: Log in to DockerHub using secrets
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # Step 3: Build and Push Dockerfile (Default)
+      - name: Build and Push Dockerfile (Default)
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          # Use dynamic DockerHub username in the tag
+          tags: ${{ secrets.DOCKER_USERNAME }}/uav-experiments:latest
+
+      # Step 4: Build and Push Dockerfile-jetson-jetpack5
+      - name: Build and Push Dockerfile-jetson-jetpack5
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile-jetson-jetpack5
+          push: true
+          # Use dynamic DockerHub username in the tag
+          tags: ${{ secrets.DOCKER_USERNAME }}/uav-experiments:latest-jetson-jetpack5

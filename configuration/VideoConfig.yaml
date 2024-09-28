@@ -2,11 +2,11 @@
 
 # Configuration for the Yolo Processing
 modelWeights: "yolov8n.pt"
-saveRawImages: False
+saveRawImages: True # Determine if the raw images should be saved
 saveProcessedVideo: True
 outputDirectory: "/output"
-# videoSource: "https://youtu.be/LNwODJXcvt4"
-videoSource: "/data/video/M0101.mp4"
+videoSource: "https://youtu.be/LNwODJXcvt4"
+# videoSource: "/data/video/M0101.mp4"
 confidenceThreshold: 0.3
 iouThreshold: 0.5
 videoStream: True

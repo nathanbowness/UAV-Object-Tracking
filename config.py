@@ -1,9 +1,9 @@
-from radar_tracking.RadarDevKit.ConfigClasses import SysParams
-from radar_tracking.RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
-from radar_tracking.RadarDevKit.RadarModule import GetRadarModule
-from radar_tracking.configuration.RadarRunParams import RadarRunParams # type: ignore
-from radar_tracking.configuration.PlotConfig import PlotConfig
-from radar_tracking.configuration.CFARParams import CFARParams
+from radar.RadarDevKit.ConfigClasses import SysParams
+from radar.RadarDevKit.Interfaces.Ethernet.EthernetConfig import EthernetParams
+from radar.RadarDevKit.RadarModule import GetRadarModule
+from radar.configuration.RadarRunParams import RadarRunParams # type: ignore
+from radar.configuration.PlotConfig import PlotConfig
+from radar.configuration.CFARParams import CFARParams
         
 # Updated configuration for the system parameters of the Radar
 def get_radar_params():
