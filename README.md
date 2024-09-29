@@ -37,7 +37,7 @@ docker tag nbowness/uav-experiments:latest-jetson-jetpack5 tracking
 ## Running the Container On WSL, Linux
 ```bash
 # Interactively launch the container. Example has configuration, data and output volumes mounted. Then you can run commands as you'd like. NOTE this has no UI elements only console
-docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image --gpus device=0
+docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image
 
 # Run elements, non interactive
 docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output tracking-image python3 tracking.py --skip-radar

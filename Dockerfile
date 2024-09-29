@@ -27,7 +27,7 @@ ENV PYTHONPATH="${PYTHONPATH}:$PROJECT_PATH/configuration:$PROJECT_PATH/plots:$P
 # Copy over tracking file
 COPY ./tracking.py .
 COPY ./constants.py .
-COPY ./config.py .
+COPY ./cli_arguments.py .
 
 # Copy over the default configuration, but this can be overwritten by the user
 RUN mkdir -p /configuration
