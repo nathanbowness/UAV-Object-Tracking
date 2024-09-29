@@ -1,7 +1,7 @@
 # File to configuration the video processing
 
 # Configuration for the Yolo Processing
-modelWeights: "yolov8n.pt"
+modelWeights: "./yolov8n.pt" # If a path on disk is specified, it will not be downloaded by Yolo
 saveRawImages: True # Determine if the raw images should be saved
 saveProcessedVideo: True
 outputDirectory: "/output"

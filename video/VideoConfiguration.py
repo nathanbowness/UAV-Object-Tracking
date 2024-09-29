@@ -31,7 +31,7 @@ class VideoConfiguration:
         
         # Default configuration values if the YAML file is not found
         self.defaults = {
-            'modelWeights': "yolov8n.pt",
+            'modelWeights': "./yolov8n.pt",
             'saveRawImages': False,
             'saveProcessedVideo': True,
             'outputDirectory': "/output",

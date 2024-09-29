@@ -13,7 +13,7 @@ from config import RadarRunParams, get_run_params, get_plot_config, get_radar_mo
 from radar.cfar import get_range_bin_for_indexs
 from radarprocessing.FDDataMatrix import FDSignalType
 from radarprocessing.RadarDataWindow import RadarDataWindow
-from radarprocessing.get_all_sensor_data import get_fd_data_from_radar
+from radar.radarprocessing.get_fd_sensor_data import get_fd_data_from_radar
 from configuration.RunType import RunType
 from tracking.ObjectTracking import ObjectTrackingExtendedObjectGNN
 

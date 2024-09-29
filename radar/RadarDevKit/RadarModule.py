@@ -38,10 +38,11 @@ class RadarModule():
         
     '--------------------------------------------------------------------------------------------'
     # function to connect to a specified interface
-    def Connect(self):
+    def Connect(self, print_debug = False):
         
-        print('========================')
-        print('Connect')
+        if print_debug:
+            print('========================')
+            print('Connect')
 
         self.myInterface = IPConnection(self)
         
@@ -57,13 +58,14 @@ class RadarModule():
             
     '--------------------------------------------------------------------------------------------'
     # function to get the Radar specific parameters
-    def GetHwParams(self):
+    def GetHwParams(self, print_debug = False):
         # do nothing if not connected or an error has occurred
         if not self.connected or self.error:
             return
         
-        print('========================')
-        print('GetHwParams')
+        if print_debug:
+            print('========================')
+            print('GetHwParams')
         
         # execute the respective command ID
         try:
@@ -77,13 +79,14 @@ class RadarModule():
         
     '--------------------------------------------------------------------------------------------'
     # function to get the Radar system parameters
-    def GetSysParams(self):
+    def GetSysParams(self, print_debug = False):
         # do nothing if not connected or an error has occurred
         if not self.connected or self.error:
             return
         
-        print('========================')
-        print('GetSysParams')
+        if print_debug:
+            print('========================')
+            print('GetSysParams')
         
         # execute the respective command ID
         try:
@@ -97,13 +100,14 @@ class RadarModule():
         
     '--------------------------------------------------------------------------------------------'
     # function to set the Radar system parameters
-    def SetSysParams(self):
+    def SetSysParams(self, print_debug = False):
         # do nothing if not connected or an error has occurred
         if not self.connected or self.error:
             return
         
-        print('========================')
-        print('SetSysParams')
+        if print_debug:
+            print('========================')
+            print('SetSysParams')
         
         # execute the respective command ID
         try:
@@ -264,7 +268,7 @@ printSettings: if true, will print the updated settings the user has set to the 
 '''        
 def GetRadarModule(updatedRadarParams: SysParams = None, 
                    updatedEthernetConfig: EthernetParams = None, 
-                   printSettings: bool = True):
+                   printSettings: bool = True) -> RadarModule:
                     
     # Get an instance of the main class
     radarModule = RadarModule()
@@ -286,13 +290,6 @@ def GetRadarModule(updatedRadarParams: SysParams = None,
     # Read the actual system parameters of the Radar Module
     radarModule.GetSysParams()
     
-    # Print the original params - for now not required
-    # if printSettings:
-    #     print("Frequency [MHz]: ", radarModule.sysParams.minFreq)
-    #     print("Bandwidth [MHz]: ", radarModule.sysParams.manualBW)
-    #     print("Ramp-time [ms]: ", radarModule.sysParams.t_ramp)
-    #     print("")
-    
     # Change system params if specified, otherwise use defaults
     if updatedRadarParams is not None:
         radarModule.sysParams.minFreq = updatedRadarParams.minFreq
@@ -301,7 +298,6 @@ def GetRadarModule(updatedRadarParams: SysParams = None,
         radarModule.sysParams.active_RX_ch = updatedRadarParams.active_RX_ch
         radarModule.sysParams.freq_points = updatedRadarParams.freq_points
         radarModule.sysParams.FFT_data_type = updatedRadarParams.FFT_data_type
-        
     
     # Check if the frontend is off
     if radarModule.sysParams.frontendEn == 0:
@@ -314,12 +310,11 @@ def GetRadarModule(updatedRadarParams: SysParams = None,
     radarModule.GetSysParams()
     if printSettings:
         # Verify that the parameters have changed
+        print("Connected to Radar with settings:")
         print("Frequency [MHz]: ", radarModule.sysParams.minFreq)
         print("Bandwidth [MHz]: ", radarModule.sysParams.manualBW)
         print("Ramp-time [ms]: ", radarModule.sysParams.t_ramp)
         print("Number Points: ", radarModule.sysParams.freq_points)      
         print("Bin Size (Resolution) [m]: ", radarModule.sysParams.tic / 1000000)
         print("")
-        
-    print("Connected to the radar.")
     return radarModule

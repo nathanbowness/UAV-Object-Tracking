@@ -1,7 +1,7 @@
 # File to configuration the video processing -- sepcifically for the Anker Webcam I have
 
 # Configuration for the Yolo Processing
-modelWeights: "yolov8n.pt"
+modelWeights: "./yolov8n.pt" # If a path on disk is specified, it will not be downloaded by Yolo
 saveRawImages: True
 saveProcessedVideo: True
 outputDirectory: "/output"

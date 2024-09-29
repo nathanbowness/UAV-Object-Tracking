@@ -4,9 +4,9 @@ import pandas as pd
 import re
 from datetime import datetime
 
-from config import get_radar_params
 from constants import SPEED_LIGHT, DIST_BETWEEN_ANTENNAS
 from radar.radarprocessing.FDDataMatrix import FDDataMatrix
+from radar.RadarDevKit.ConfigClasses import SysParams
 
 
 def extract_timestamp_from_filename(filename):
@@ -39,12 +39,12 @@ def extract_timestamp_from_filename(filename):
 def determine_phase_angle(I1_phase: np.array, 
                           Q1_phase: np.array, 
                           I2_phase: np.array, 
-                          Q2_phase: np.array):
+                          Q2_phase: np.array,
+                          radarParams: SysParams):
     """
     Determine the phase angle of the signal based on the phase of the I and Q components of the signal.
     All signals should be in radaians
     """
-    radarParams = get_radar_params()
     fc = (radarParams.minFreq*(10**6)) + (radarParams.manualBW / 2)*(10**6)
     
     # Calculate phases for Rx1 and Rx2

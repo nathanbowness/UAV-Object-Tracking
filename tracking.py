@@ -1,4 +1,3 @@
-import argparse
 import numpy as np
 import multiprocessing as mp
 import time
@@ -15,21 +14,18 @@ import torch
 from video.VideoConfiguration import VideoConfiguration
 from tracking.TrackingConfiguration import TrackingConfiguration
 
-from datetime import datetime
+from cli_arguments import define_argument_parser, update_radar_config, update_video_config, update_tracking_config
 
 # Different tracking programs
 from tracking.ObjectTrackingGmPhd import get_object_tracking_gm_phd
-from radar.configuration.CFARParams import CFARParams
-from radar.configuration.RadarRunParams import RadarRunParams
+from radar.configuration.RadarConfiguration import RadarConfiguration
 from radar.radar_tracking import RadarTracking
 from video.object_tracking_yolo_v8 import track_objects
 
-def radar_tracking_task(stop_event, args, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
-   
-    cfar_params = CFARParams(num_guard=10, num_train=15, threshold=12, threshold_is_percentage=False)
-    radar_params = RadarRunParams(args, cfar_params)
-    radar_tracking = RadarTracking(radar_params, radar_data_queue, plot_data_queue)
+import pandas as pd
 
+def radar_tracking_task(stop_event, config: RadarConfiguration, start_time: pd.Timestamp, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
+    radar_tracking = RadarTracking(config, start_time, radar_data_queue, plot_data_queue)
     radar_tracking.object_tracking(stop_event)
     time.sleep(0.1)  # Add a delay to avoid busy-waiting
         
@@ -154,81 +150,55 @@ def plot_data(plot_queue: mp.Queue, stop_event):
                 
             except mp.queues.Empty:
                 pass
-    
+
 if __name__ == '__main__':
-    start_time = time.time()
-    
-    parser = argparse.ArgumentParser(description='Object Tracking using Radar and Video')
-    parser.add_argument('--weights', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
-    parser.add_argument('--download', action='store_true', help='download model weights automatically')
-    parser.add_argument('--no-download', dest='download', action='store_false')
-    parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
-    parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--conf-thres', type=float, default=0.25, help='object confidence threshold')
-    parser.add_argument('--iou-thres', type=float, default=0.45, help='IOU threshold for NMS')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--view-img', action='store_true', help='display results')
-    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
-    parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
-    parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
-    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 0 2 3')
-    parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
-    parser.add_argument('--augment', action='store_true', help='augmented inference')
-    parser.add_argument('--update', action='store_true', help='update all models')
-    parser.add_argument('--project', default='runs/detect', help='save results to project/name')
-    parser.add_argument('--name', default='object_tracking', help='save results to project/name')
-    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
-    parser.add_argument('--blur', action='store_true', help='blur detections')
-    
-    # Options added by me
-    parser.add_argument('--skip-video', action='store_true', help='skip video tracking')
-    parser.add_argument('--skip-radar', action='store_true', help='skip radar tracking')
-    parser.add_argument('--skip-tracking', action='store_true', help='skip the tracking algorithm and path creation')
-    parser.add_argument('--enable-plot', action='store_true', help='enable plotting')
-    parser.add_argument('--radar-from-file', action='store_true', help='use radar data from file')
-    parser.add_argument('--radar-source', type=str, default='data/radar', help='source folder to pull the radar data from. Only used if "radar-from-file" is set')
-    parser.add_argument('--video-config', type=str, default='/configuration/VideoConfig.yaml', help='video configuration file')
-    
+    start_time = pd.Timestamp.now()
+    parser = define_argument_parser()
     parser.set_defaults(download=True)
     args = parser.parse_args()
-    opt = parser.parse_args()
     
-    # Create a stop event and a queue for radar_data
-    start_time = time.time()
+    print("Starting the tracking processes.")
+    
+    # Create a stop event and a queue for data to be passed between processes
     stop_event = mp.Event()
     radar_data_queue = None
     image_data_queue = None
     plot_data_queue = None
     
-    # plotting process
-    if args.enable_plot:
-        plot_data_queue = mp.Queue()
-        plot_data(plot_data_queue, stop_event) # Start the plot data process
-    
-    
-    # Create the radar tracking process
+    # Create the radar tracking configuration, process, queue to move data if not disabled
     if not args.skip_radar:
-        radar_data_queue = mp.Queue()
-        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, args, radar_data_queue, plot_data_queue))
-        radar_proc.start()
+        radar_config = RadarConfiguration(config_path=args.radar_config)
+        radar_config = update_radar_config(radar_config, args) # Update the radar configuration with the command line arguments
         
+        radar_data_queue = mp.Queue()
+        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, radar_config, start_time, radar_data_queue, plot_data_queue))
+        radar_proc.start()
+      
+    # Create the video tracking configuration, process, queue to move data
     if not args.skip_video:
         video_config = VideoConfiguration(config_path=args.video_config)
+        video_config = update_video_config(video_config, args) # Update the video configuration with the command line arguments
         
         image_data_queue = mp.Queue()
-        # Create the video tracking process if it's not skipped
         with torch.no_grad():
             video_proc = mp.Process(name="Video Data Coll.", target=track_objects, args=(stop_event, video_config, image_data_queue))
             video_proc.start()  
-            
+      
+    # Create the object tracking configuration, process, queue to move data      
     if not args.skip_tracking:
         tracking_config = TrackingConfiguration()
+        tracking_config = update_tracking_config(video_config, args) # Update the video configuration with the command line arguments
         tracker = get_object_tracking_gm_phd(start_time, tracking_config)
         
         # Queue process to handle incoming data
         tracking_proc = mp.Process(name="Tracking", target=process_queues, args=(stop_event, tracker, image_data_queue, radar_data_queue, plot_data_queue))
         tracking_proc.start()
+        
+    # plotting process
+    # if args.enable_plot:
+        
+    #     plot_data_queue = mp.Queue()
+    #     plot_data(plot_data_queue, stop_event) # Start the plot data process
     
     try:
         print("Starting the tracking processes.")
@@ -244,7 +214,7 @@ if __name__ == '__main__':
             radar_proc.join()
         if not args.skip_video:
             video_proc.join()
-            
-    tracking_proc.join()
+        if not args.skip_tracking:
+            tracking_proc.join()
 
     print(f"Tracking duration: {time.time() - start_time:.2f} seconds")

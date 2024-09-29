@@ -27,3 +27,11 @@ trackTailLength: 0.1 # O to 1, 0 means no tail, 1 means full tail
 
 # Configuration for processing and memory management
 maxTrackQueueSize: 200
+
+# Show the Stone Soup tracking plot when the program exits
+showTrackingPlot: False
+
+# Output path for the tracking results
+saveTrackingResults: True
+outputDirectory: '/output'
+

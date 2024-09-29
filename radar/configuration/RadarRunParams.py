@@ -1,9 +1,8 @@
 from .CFARParams import CFARParams
 from .CFARType import CfarType
-from .RunType import RunDataFormat, RunType
+from .RunType import RunType
 
-class RadarRunParams():
-    """
+class RadarRunParams():    """
     Parameters to run the radar system
     """
     def __init__(self, args, cfar_params: CFARParams):
@@ -11,7 +10,7 @@ class RadarRunParams():
         self.runType = RunType.LIVE                        
         self.recordedDataFolder= None
         self.recordedProcessingDelaySec = 0
-        self.recordedDataFormat = RunDataFormat.FD_CUSTOM
+        # self.recordedDataFormat = RunDataFormat.FD_CUSTOM
         self.ramp_type = "UP-Ramp"
         self.cfar_params = cfar_params
         self.run_velocity_measurements = False
@@ -39,7 +38,7 @@ class RadarRunParams():
         
         if args.radar_from_file:
             self.runType = RunType.RERUN
-            self.recordedDataFormat = RunDataFormat.SENTOOL_FD
+            # self.recordedDataFormat = RunDataFormat.SENTOOL_FD
         
         if args.radar_source:
             self.recordedDataFolder = args.radar_source
@@ -49,6 +48,6 @@ class RadarRunParams():
         if not args.skip_radar and not args.skip_video:
             exit("Both radar and video tracking cannot be skipped. Please choose one to run.")
         
-        if(self.recordedDataFormat == RunDataFormat.SENTOOL_FD and not self.runType == RunType.RERUN):
+        # if(self.recordedDataFormat == RunDataFormat.SENTOOL_FD and not self.runType == RunType.RERUN):
             exit("You cannot use the SENTOOL_FD format for a live data run, since this program cannot record data in that format.")
         

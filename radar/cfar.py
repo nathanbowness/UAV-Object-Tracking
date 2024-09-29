@@ -1,16 +1,15 @@
 import numpy as np
 
-from config import get_cfar_params
 from radar.configuration.CFARType import CfarType
 from radar.configuration.CFARParams import CFARParams
     
-def cfar_required_cells(cfar_params: CFARParams = get_cfar_params()):
+def cfar_required_cells(cfar_params: CFARParams):
     if cfar_params.cfar_type == CfarType.CASO:
         return 2*(cfar_params.num_train + cfar_params.num_guard) + 1
     elif cfar_params.cfar_type == CfarType.LEADING_EDGE:
         return (cfar_params.num_train + cfar_params.num_guard)+1
     
-def cfar_single(data, index_CUT, cfar_params: CFARParams = get_cfar_params()):
+def cfar_single(data, index_CUT, cfar_params: CFARParams):
     if cfar_params.cfar_type == CfarType.CASO:
         return caso_cfar_single(data, index_CUT, cfar_params)
     elif cfar_params.cfar_type == CfarType.LEADING_EDGE:

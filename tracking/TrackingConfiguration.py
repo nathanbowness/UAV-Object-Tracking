@@ -46,7 +46,10 @@ class TrackingConfiguration:
             'minDetectionsToCluster': 1,
             'maxDistanceBetweenClusteredObjectsM': 2,
             'trackTailLength': 0.1,
-            'maxTrackQueueSize': 200
+            'maxTrackQueueSize': 200,
+            'showTrackingPlot': False,
+            'saveTrackingResults': True,
+            'outputDirectory': '/output'
         }
 
         # Load the configuration
@@ -74,6 +77,9 @@ class TrackingConfiguration:
                     self.maxDistanceBetweenClusteredObjectsM = config.get('maxDistanceBetweenClusteredObjectsM', self.defaults['maxDistanceBetweenClusteredObjectsM'])
                     self.trackTailLength = config.get('trackTailLength', self.defaults['trackTailLength'])
                     self.maxTrackQueueSize = config.get('maxTrackQueueSize', self.defaults['maxTrackQueueSize'])
+                    self.showTrackingPlot = config.get('showTrackingPlot', self.defaults['showTrackingPlot'])
+                    self.saveTrackingResults = config.get('saveTrackingResults', self.defaults['saveTrackingResults'])
+                    self.trackingOutputPath = config.get('outputDirectory', self.defaults['outputDirectory'])
                     
                     # Set the active filter's settings as attributes of this instance
                     self.set_active_filter_attributes()
@@ -95,6 +101,9 @@ class TrackingConfiguration:
         self.maxDistanceBetweenClusteredObjectsM = self.defaults['maxDistanceBetweenClusteredObjectsM']
         self.trackTailLength = self.defaults['trackTailLength']
         self.maxTrackQueueSize = self.defaults['maxTrackQueueSize']
+        self.showTrackingPlot = self.defaults['showTrackingPlot']
+        self.saveTrackingResults = self.defaults['saveTrackingResults']
+        self.trackingOutputPath = self.defaults['outputDirectory']
         
         # Set the active filter's settings as attributes of this instance
         self.set_active_filter_attributes()
@@ -124,7 +133,9 @@ class TrackingConfiguration:
                f"minDetectionsToCluster: {self.minDetectionsToCluster}\n" \
                f"maxDistanceBetweenClusteredObjectsM: {self.maxDistanceBetweenClusteredObjectsM}\n" \
                f"trackTailLength: {self.trackTailLength}\n" \
-               f"maxTrackQueueSize: {self.maxTrackQueueSize}"
+               f"maxTrackQueueSize: {self.maxTrackQueueSize}\n" \
+                f"showTrackingPlot: {self.showTrackingPlot}\n" \
+                f"outputDirectory: {self.trackingOutputPath}"
 
 if __name__ == "__main__":
     tracking_config = TrackingConfiguration()

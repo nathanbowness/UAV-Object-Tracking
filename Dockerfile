@@ -13,6 +13,8 @@ COPY ./requirements.txt .
 # Install requirements
 RUN pip install -r requirements.txt
 
+COPY ./yolov8n.pt .
+
 # Copy over folders
 COPY ./radar ./radar
 COPY ./tracking ./tracking

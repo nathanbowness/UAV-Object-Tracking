@@ -9,13 +9,29 @@ Please see the [Development Environment](./docs/devEnviroment.md) Documentation 
 # Run in Docker
 This project can be fully run and configured from a docker container. Follow the steps below to get the image build and running in a container.
 
-## Building the Container
+## Accessing the Image
+### Pulling Image from DockerHub
+```bash
+# Linux Image
+docker pull nbowness/uav-experiments:latest
+
+# Jetson Jetpack 5 Image
+docker pull nbowness/uav-experiments:latest-jetson-jetpack5
+```
+
+### Building the Container Locally
 ```bash
 # Build conatiner for linux
-docker build . -t tracking-image
+docker build . -t uav-experiments:latest
 
 # Build container for jetson-jetpack5
-docker build . -f Dockerfile-jetson-jetpack5 tracking-image-jetson
+docker build . -f Dockerfile-jetson-jetpack5 uav-experiments:latest-jetson-jetpack5
+```
+
+## Update Image Tag 
+You can update the tag to simply the process for running the container locally. The local name `tracking` will be used for all following examples and commands to simplify the documentation.
+```bash
+docker tag nbowness/uav-experiments:latest-jetson-jetpack5 tracking
 ```
 
 ## Running the Container On WSL, Linux
