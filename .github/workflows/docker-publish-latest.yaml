@@ -8,21 +8,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout code from the branch
       - name: Checkout branch
         uses: actions/checkout@v3
 
-      # Step 2: Log in to DockerHub using secrets
+      # Get the commit count from the repository to tag the image
+      - name: Get Commit Count
+        id: commit_count
+        run: echo "::set-output name=count::$(git rev-list --count HEAD)"
+
       - name: Log in to DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Step 3: Build and Push Dockerfile (Default)
       - name: Build and Push Dockerfile (Default)
         uses: docker/build-push-action@v4
         with:
           context: .
           file: ./Dockerfile
           push: true
-          # Use dynamic DockerHub username in the tag
-          tags: ${{ secrets.DOCKER_USERNAME }}/uav-experiments:latest
-
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/uav-experiments:latest
+            ${{ secrets.DOCKER_USERNAME }}/uav-experiments:0.1.${{ steps.commit_count.outputs.count }}
