@@ -11,3 +11,7 @@ nbformat==5.10.4
 ipykernel==6.29.4
 ortools==9.3.10497 # Previoiusly was 9.10.4067
 protobuf==3.20.3
+
+# Other packages required by yolo
+lapx==0.5.10.post1
+pytubefix==7.0.0

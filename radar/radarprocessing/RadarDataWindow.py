@@ -1,23 +1,11 @@
 from collections import deque
 from radar.cfar import cfar_single, cfar_required_cells
-from constants import SPEED_LIGHT
 from radar.radarprocessing.FDDataMatrix import FDDataMatrix, FDSignalType
-from config import RadarRunParams, CFARParams
+from radar.configuration.CFARParams import CFARParams
 
 import numpy as np
 import pandas as pd
 from datetime import timedelta
-
-from .FDDetectionMatrix import FDDetectionMatrix
-
-import numpy as np
-import pandas as pd
-
-class StoredData():
-    def __init__(self, raw_data: FDDataMatrix, relativeTime: int, detection_data: FDDetectionMatrix):
-        self.raw_data = raw_data
-        self.relativeTime = relativeTime
-        self.detection_data = detection_data
 
 class RadarDataWindow():
     """
@@ -110,94 +98,74 @@ class RadarDataWindow():
                                                                                        index_CUT=self.index_to_eval,
                                                                                        cfar_params=self.cfar_params)
         return detection_matrix
-    
-    def get_signal_for_bin(self, bin_index, signalType: FDSignalType):
-        """
-        Retrieve the timestamp, raw signal values, and detection values for a specific bin and signal across all records.
-        
-        Parameters:
-            bin_index (int): The index of the bin (0 to 511).
-            signal_index (int): The index of the signal in the array structure for raw data.
-            detection_index (int): The index of the signal in the array structure for detection data (may differ from signal_index).
 
-        Returns:
-            list of tuples: Each tuple contains (timestamp, raw value, detection value).
-        """
+
+
+
+
+
+
+    # def get_signal_for_bin(self, bin_index, signalType: FDSignalType):
+    #     """
+    #     Retrieve the timestamp, raw signal values, and detection values for a specific bin and signal across all records.
         
-        signals = []
-        timestamps = []
-        detections = []
-        thresholds = []
+    #     Parameters:
+    #         bin_index (int): The index of the bin (0 to 511).
+    #         signal_index (int): The index of the signal in the array structure for raw data.
+    #         detection_index (int): The index of the signal in the array structure for detection data (may differ from signal_index).
+
+    #     Returns:
+    #         list of tuples: Each tuple contains (timestamp, raw value, detection value).
+    #     """
         
-        # Single loop to collect both time stamps, frequency values, detections and thresholds
-        if signalType.value < 4:
-            for i in range(len(self.timestamps)):
-                timestamps.append((self.timestamps[i] - self.creation_time).total_seconds())
-                signals.append(self.raw_records[i][bin_index, signalType.value])
-                detections.append(self.detection_records[i][bin_index, signalType.value*2])
-                thresholds.append(self.detection_records[i][bin_index, signalType.value*2+1])
-        # For plotting the Rx Phase, and View Angles
-        else:
-            for i in range(len(self.timestamps)):
-                timestamps.append((self.timestamps[i] - self.creation_time).total_seconds())
-                signals.append(self.raw_records[i][bin_index, signalType.value])
-        return signals, timestamps, detections, thresholds
+    #     signals = []
+    #     timestamps = []
+    #     detections = []
+    #     thresholds = []
+        
+    #     # Single loop to collect both time stamps, frequency values, detections and thresholds
+    #     if signalType.value < 4:
+    #         for i in range(len(self.timestamps)):
+    #             timestamps.append((self.timestamps[i] - self.creation_time).total_seconds())
+    #             signals.append(self.raw_records[i][bin_index, signalType.value])
+    #             detections.append(self.detection_records[i][bin_index, signalType.value*2])
+    #             thresholds.append(self.detection_records[i][bin_index, signalType.value*2+1])
+    #     # For plotting the Rx Phase, and View Angles
+    #     else:
+    #         for i in range(len(self.timestamps)):
+    #             timestamps.append((self.timestamps[i] - self.creation_time).total_seconds())
+    #             signals.append(self.raw_records[i][bin_index, signalType.value])
+    #     return signals, timestamps, detections, thresholds
     
-    def get_signal_for_bins(self, signalType: FDSignalType):
-        """
-        Get the signal for all range bins for the current window
-        return: Signal across all range bins as a function of time
-        """
-        signals = []
-        timestamps = []
-        detections = []
+    # def get_signal_for_bins(self, signalType: FDSignalType):
+    #     """
+    #     Get the signal for all range bins for the current window
+    #     return: Signal across all range bins as a function of time
+    #     """
+    #     signals = []
+    #     timestamps = []
+    #     detections = []
         
-        # Skip non-frequency data
-        if signalType.value < 4:
-            for i in range(len(self.timestamps)):
-                # Array length n, of each relative time entry when data was logged
-                timestamps.append((self.timestamps[i] - self.creation_time).total_seconds())
-                # Array of length n, which contans array of length 512. Each value of the 512 is a dBm value. Otherwise the index represents the range the value is assocaite to
-                signals.append(self.raw_records[i][:, signalType.value])
-                # Array of length n, which contans array of length 512. Each value is a 1 or 0 for a detection
-                detections.append(self.detection_records[i][:, signalType.value*2])
+    #     # Skip non-frequency data
+    #     if signalType.value < 4:
+    #         for i in range(len(self.timestamps)):
+    #             # Array length n, of each relative time entry when data was logged
+    #             timestamps.append((self.timestamps[i] - self.creation_time).total_seconds())
+    #             # Array of length n, which contans array of length 512. Each value of the 512 is a dBm value. Otherwise the index represents the range the value is assocaite to
+    #             signals.append(self.raw_records[i][:, signalType.value])
+    #             # Array of length n, which contans array of length 512. Each value is a 1 or 0 for a detection
+    #             detections.append(self.detection_records[i][:, signalType.value*2])
     
-        return np.array(signals), np.array(timestamps), np.array(detections)
+    #     return np.array(signals), np.array(timestamps), np.array(detections)
     
-    def get_all_detections_Rx1(self, signalType: FDSignalType):
-        timestamps = []
-        detections = []
+    # def get_all_detections_Rx1(self, signalType: FDSignalType):
+    #     timestamps = []
+    #     detections = []
         
-        for i in range(len(self.timestamps)):
-                # Array length n, of each relative time entry when data was logged
-                timestamps.append((self.timestamps[i] - self.creation_time).total_seconds())
-                # Array of length n, which contans array of length 512. Each value is a 1 or 0 for a detection
-                detections.append(self.detection_records[i][:, FDSignalType*2])
+    #     for i in range(len(self.timestamps)):
+    #             # Array length n, of each relative time entry when data was logged
+    #             timestamps.append((self.timestamps[i] - self.creation_time).total_seconds())
+    #             # Array of length n, which contans array of length 512. Each value is a 1 or 0 for a detection
+    #             detections.append(self.detection_records[i][:, FDSignalType*2])
                 
-        return np.array(timestamps), np.append(detections)
-    
-    
-            
-    
-    # def process_new_data_diff(self):
-    #     if len(self.raw_records) < self.required_cells_cfar:
-    #         # Not enough data to run CFAR
-    #         return np.zeros((512, 8))
-
-    #     num_bins = 512  # Assuming 512 range bins
-    #     signals = [FDSignalType.I1, FDSignalType.Q1, FDSignalType.I2, FDSignalType.Q2]
-    #     detection_matrix = np.zeros((num_bins, 8))
-        
-    #     relevate_deque_data = list(self.raw_records)[-self.required_cells_cfar:]
-        
-    #     # relevate_deque_data = list(itertools.islice(self.raw_records, len(self.raw_records) - self.required_cells_cfar, len(self.raw_records)))
-    #     # relevant_data_np = np.concatenate(relevate_deque_data)
-
-    #     for i in range(num_bins):  # Each range bin
-    #         for idx, signal in enumerate(signals):
-    #             data = np.array([item[i][signal.value] for item in relevate_deque_data])
-    #             detection_matrix[i, idx*2], detection_matrix[i, idx*2+1] = cfar_single(data, 
-    #                                                                                    index_CUT=self.index_to_eval,
-    #                                                                                    cfar_params=self.cfar_params)
-    #     return detection_matrix
-        
+    #     return np.array(timestamps), np.append(detections)        

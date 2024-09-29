@@ -1,18 +1,34 @@
-# File to set up the radar configuration
+# File to set up the radar configuration. 
 
-# Radar signal configuration
+# Radar signal configuration - for now only FMCW Up-Ramp is supported
 minimumFrequencyMhz: 24000
-maximumFrequencyMhz: 25000
+maximumFrequencyMhz: 24750
 rampTimeFmcwChirp: 1
+# Tx attenuation during measurement
+# 0 ~ 0dB, 1 ~ 0.4dB, 2 ~ 0.8dB, 3 ~ 1.4 dB, 4 ~ 2.5dB, 5 ~ 4dB, 6 ~6dB, 7 ~ 9dB
 attenuation: 0
 
 # Radar connection configuration
-ethernetPort: 1024
-ethernetIp: "10.0.0.59"
+ethernetParams:
+  ethernetPort: 1024
+  ethernetIp: "10.0.0.59" # IP to connect to the radar with
 
 # Radar signal processing configuration
-cfarNumGuard: 2
-cfarNumTrainingCells: 10
-cfarThreshold: 10
-cfarType: "CASO" # Options are CASO, LEADING_EDGE
+cfarParams:
+  cfarNumGuard: 2
+  cfarNumTrainingCells: 10
+  cfarThreshold: 10
+  cfarType: "CASO" # Options are CASO, LEADING_EDGE
 
+# Run configuration
+run: LIVE # Options are LIVE, RERUN
+sourcePath: "/data/radar/run2-TD/" # Path to the data to be processed for RERUN mode
+
+recordData: true # Record radar data to disk
+recordDataPath: "/output" # Path to the data to be recorded
+
+# How many Radar results to keep in the buffer for analysis and CFAR 
+processingWindow: 200
+
+# Print radar runtime settings to console on startup
+printSettings: true
