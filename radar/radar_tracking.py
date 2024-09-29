@@ -10,7 +10,7 @@ from radar.configuration.RunType import RunType
 from radar.configuration.RadarRunParams import RadarRunParams
 from radar.radarprocessing.FDDataMatrix import FDSignalType
 from radar.radarprocessing.RadarDataWindow import RadarDataWindow
-from dataparsing.sentool_fd_textdata_parser import read_columns
+from radar.dataparsing.sentool_fd_textdata_parser import read_columns
 
 class RadarTracking():
     def __init__(self, radar_run_params: RadarRunParams, radar_data_queue: mp.Queue = None, plot_data_queue: mp.Queue = None):

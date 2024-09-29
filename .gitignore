@@ -166,6 +166,8 @@ stonesoup_tutorials/*
 
 # Models
 *.pt
+# Include the specific yolov8n.pt file - included by default to not require a download, other models will be ignored
+./!yolov8n.pt
 
 # Test videos, images, yamls
 *.mp4

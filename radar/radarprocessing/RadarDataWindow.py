@@ -4,8 +4,6 @@ from constants import SPEED_LIGHT
 from radar.radarprocessing.FDDataMatrix import FDDataMatrix, FDSignalType
 from config import RadarRunParams, CFARParams
 
-from radar.radarprocessing.micro_doppler_velocity_analysis import micro_doppler_analysis, calculate_velocity
-
 import numpy as np
 import pandas as pd
 from datetime import timedelta
@@ -90,40 +88,6 @@ class RadarDataWindow():
     
     def get_detection_records(self):
         return self.detection_records
-    
-    def micro_doppler_velocity_analysis(self):
-        """
-        Perform micro-Doppler analysis on the raw data.
-        """
-        if len(self.timestamps) < 2:
-            return None
-        
-        time_interval = 0.245  # Time interval between each record in seconds
-        
-        velocity_records = []
-        for i in range(512):
-            phase_I1 = np.array([self.raw_records[-j][i, FDSignalType.I1.value] for j in range(10, 0, -1)])
-            phase_Q1 = np.array([self.raw_records[-j][i, FDSignalType.Q1.value] for j in range(10, 0, -1)])
-            phase_I2 = np.array([self.raw_records[-j][i, FDSignalType.I2.value] for j in range(10, 0, -1)])
-            phase_Q2 = np.array([self.raw_records[-j][i, FDSignalType.Q2.value] for j in range(10, 0, -1)])
-            
-            f, t, Zxx, doppler_avg, carrier_frequency, \
-            drone_detected, max_magnitude_per_time, max_magnitude_overall = micro_doppler_analysis(phase_I1,
-                                                                                                phase_Q1,
-                                                                                                phase_I2,
-                                                                                                phase_Q2,
-                                                                                                time_interval)
-            
-            velocity = calculate_velocity(doppler_avg)
-            ftest = f[-1]
-            latest_freq = f[np.argmax(np.abs(Zxx), axis=0)]
-            latest_velocity = velocity[-1]
-            
-            # Create a NumPy array with exactly two numbers
-            velocity_record = np.array([max_magnitude_overall, velocity[-1]], dtype=float)
-            velocity_records.append(velocity_record)
-            
-        self.velocity_records.append(np.array(velocity_records,  dtype=float))
     
     def process_new_data(self):
         if len(self.raw_records) < self.required_cells_cfar:
