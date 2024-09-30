@@ -1,0 +1,50 @@
+site_name: "UAV Tracking Experiments"
+site_description: "This is a documentation site for the UAV Tracking Experiments project."
+site_url: "https://nathanbowness.github.io/UAV-Object-Tracking/"
+docs_dir: "docs/"
+site_dir: "site/"
+theme:
+  name: "material"
+  language: en
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.top  # Make sure top navigation is enabled
+  navigation:
+    sections: false  # Ensure sidebar sections are disabled
+
+
+docs_dir: .  # Set the `docs_dir` to the current directory (.)
+nav:
+
+  - Home: docs/index.md
+  - Configuration:
+    - Configuration: docs/configuration/configuration.md
+  - Setup: 
+    - Setting Up Dev Environment: docs/setup/devEnvironment.md
+    - Setting Up Webcam Calibration: docs/setup/calibratingWebcam.md
+  - Object Tracking with UAV: docs/object-tracking-with-uav.md
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
