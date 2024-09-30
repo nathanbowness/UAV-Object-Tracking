@@ -2,7 +2,6 @@ site_name: "UAV Tracking Experiments"
 site_description: "This is a documentation site for the UAV Tracking Experiments project."
 site_url: "https://nathanbowness.github.io/UAV-Object-Tracking/"
 docs_dir: "docs/"
-site_dir: "site/"
 theme:
   name: "material"
   language: en
@@ -33,7 +32,6 @@ theme:
 
 docs_dir: .  # Set the `docs_dir` to the current directory (.)
 nav:
-
   - Home: docs/index.md
   - Configuration:
     - Configuration: docs/configuration/configuration.md
