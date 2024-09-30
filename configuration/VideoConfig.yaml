@@ -13,7 +13,7 @@ videoStream: True
 
 # Configuration for showing the Live Video During Yolo Processing 
 showBoxesInVideo: True
-showVideo: True
+showVideo: False
 
 # Camera Details
 cameraHorizontalFOV: 170

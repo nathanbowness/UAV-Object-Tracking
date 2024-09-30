@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 import numpy as np
 
@@ -29,8 +30,12 @@ class RadarTracking():
         # output directory will be the given folder, with a timestamp and 'radar' appended to it
         self.output_dir = os.path.join(self.config.output_path, self.start_time.strftime('%Y-%m-%d_%H-%M-%S'), 'radar')
         
-        self.radar_module = self.config.connect_get_radar_module()
-        self.bin_size_meters = self.radar_module.sysParams.tic / 1000000
+        if self.config.run_type == RunType.LIVE:
+            self.radar_module = self.config.connect_get_radar_module()
+            if (not self.radar_module.connected):
+                print("Radar module is NOT connected. Exiting.")
+                sys.exit("Could not connect to radar module. Please check the connection, or disable the radar with the '--skip-radar' flag.")
+            self.bin_size_meters = self.radar_module.sysParams.tic / 1000000
         
         self.radar_window = RadarDataWindow(cfar_params=self.config.cfar_params, 
                                             start_time=self.start_time,

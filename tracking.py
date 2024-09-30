@@ -187,7 +187,7 @@ if __name__ == '__main__':
     # Create the object tracking configuration, process, queue to move data      
     if not args.skip_tracking:
         tracking_config = TrackingConfiguration()
-        tracking_config = update_tracking_config(video_config, args) # Update the video configuration with the command line arguments
+        tracking_config = update_tracking_config(tracking_config, args) # Update the video configuration with the command line arguments
         tracker = get_object_tracking_gm_phd(start_time, tracking_config)
         
         # Queue process to handle incoming data
