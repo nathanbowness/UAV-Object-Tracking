@@ -15,3 +15,4 @@ protobuf==3.20.3
 # Other packages required by yolo
 lapx==0.5.10.post1
 pytubefix==7.0.0
+mkdocs-material
