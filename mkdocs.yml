@@ -2,6 +2,7 @@ site_name: "UAV Tracking Experiments"
 site_description: "This is a documentation site for the UAV Tracking Experiments project."
 site_url: "https://nathanbowness.github.io/UAV-Object-Tracking/"
 docs_dir: "docs/"
+site_dir: "site/"
 theme:
   name: "material"
   language: en
@@ -29,16 +30,14 @@ theme:
   navigation:
     sections: false  # Ensure sidebar sections are disabled
 
-
-docs_dir: .  # Set the `docs_dir` to the current directory (.)
 nav:
-  - Home: docs/index.md
+  - Home: README.md
   - Configuration:
-    - Configuration: docs/configuration/configuration.md
+    - Configuration: configuration/configuration.md
   - Setup: 
-    - Setting Up Dev Environment: docs/setup/devEnvironment.md
-    - Setting Up Webcam Calibration: docs/setup/calibratingWebcam.md
-  - Object Tracking with UAV: docs/object-tracking-with-uav.md
+    - Setting Up Dev Environment: setup/devEnvironment.md
+    - Setting Up Webcam Calibration: setup/calibratingWebcam.md
+  - Object Tracking with UAV: object-tracking-with-uav.md
 
 markdown_extensions:
   - pymdownx.superfences:
