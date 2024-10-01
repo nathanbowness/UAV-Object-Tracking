@@ -11,9 +11,13 @@ jobs:
       - name: Checkout branch
         uses: actions/checkout@v3
 
-      # Get the commit count from the repository to tag the image
-      - name: Get Commit Count
-        run: echo "COMMIT_COUNT=$(git rev-list --count HEAD)" >> $GITHUB_ENV
+      # Read the version from version.yaml
+      - name: Read Version from version.yaml
+        id: read_version
+        run: |
+          VERSION=$(cat version.yaml | grep 'version:' | cut -d ' ' -f 2)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Using version: $VERSION"
 
       - name: Log in to DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -26,4 +30,4 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/uav-experiments:latest
-            ${{ secrets.DOCKER_USERNAME }}/uav-experiments:0.1.${{ env.COMMIT_COUNT }}
+            ${{ secrets.DOCKER_USERNAME }}/uav-experiments:${{ env.VERSION }}

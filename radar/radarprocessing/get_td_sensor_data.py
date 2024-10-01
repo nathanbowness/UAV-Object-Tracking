@@ -39,6 +39,10 @@ def get_td_data_voltage(radar_module: RadarModule, ramp_type: str = "UP-Ramp") -
     Return the TD data in voltage format.
     """
     radar_module.GetTdData(measurement=ramp_type)
+    # If there's an error return, we'll try again
+    if radar_module.error:
+        return None
+    
     time = pd.Timestamp.now()
     n_samples = 1024
     

@@ -126,8 +126,8 @@ class RadarConfiguration:
             self.apply_defaults()
 
         # Print settings if enabled
-        if self.print_settings:
-            print(self)
+        # if self.print_settings:
+        #     print(self)
 
     def apply_defaults(self):
         """

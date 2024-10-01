@@ -29,9 +29,9 @@ docker build . -f Dockerfile-jetson-jetpack5 uav-experiments:latest-jetson-jetpa
 ```
 
 ## Update Image Tag 
-You can update the tag to simply the process for running the container locally. The local name `tracking` will be used for all following examples and commands to simplify the documentation.
+You can update the tag to simply the process for running the container locally. The local name `tracking-image` will be used for all following examples and commands to simplify the documentation.
 ```bash
-docker tag nbowness/uav-experiments:latest-jetson-jetpack5 tracking
+docker tag nbowness/uav-experiments:latest-jetson-jetpack5 tracking-image
 ```
 
 ## Running the Container On WSL, Linux
@@ -40,7 +40,7 @@ docker tag nbowness/uav-experiments:latest-jetson-jetpack5 tracking
 docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image
 
 # Run elements, non interactive
-docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output tracking-image python3 tracking.py --skip-radar
+docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image python3 tracking.py --skip-radar
 
 # Run with UI elements active.
 xhost +local:docker && docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v ~/.Xauthority:/root/.Xauthority -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image
@@ -54,7 +54,9 @@ docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -it t
 When running on Jetson. Jetson equips iGPU rather than the dGPU. The OS is also a customized l4t rather than standard Linux. You can use --runtime=nvidia and by default, it will enable GPU for usage.
 ```bash
 # Run the container interactively
-docker run -v "$(pwd)"/data:/data  --runtime=nvidia -it tracking-image-json
+docker run -v "$(pwd)"/data:/data -v "$(pwd)"/output:/output --ipc=host --runtime=nvidia -it tracking-image
+# After being inside the container, you can run the following:
+python3 tracking.py --radar-start-delay 30 # Add 30 second delay, since loading the Yolo model on Jetson takes a while
 ```
 
 ### Easily overwrite configuration in the container
