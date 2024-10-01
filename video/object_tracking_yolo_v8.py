@@ -7,11 +7,12 @@ import os
 import multiprocessing as mp
 import math
 from constants import IMAGE_DETECTION_TYPE
+import pandas as pd
 
 from video.object_location_size import CameraDetails, object_location
 from video.VideoConfiguration import VideoConfiguration
 
-def setup_output_folders(output_directory : str, save_raw_img : bool = True, start_time = None):
+def setup_output_folders(output_directory : str, save_raw_img : bool = True, start_time :pd.Timestamp = None):
     """
     Create the output folder structure for the run
     Args:
@@ -23,30 +24,22 @@ def setup_output_folders(output_directory : str, save_raw_img : bool = True, sta
     """
     
     if start_time is None:
-        start_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        start_time_str = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    else:
+        start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
     
-    output_folder = os.path.join(output_directory, start_time)
+    output_folder = os.path.join(output_directory, start_time_str)
     os.makedirs(output_folder, exist_ok=True)
     
     if (save_raw_img):
         # Create a folder to save the raw output images if the option is selected
         raw_output_folder = os.path.join(output_folder, "raw")
         os.mkdir(raw_output_folder)
-        print("Saving contents of the run to: ", raw_output_folder)
+        print("Saving video tracking contents of the run to: ", raw_output_folder)
     
-    return output_folder    
-
-def on_predict_batch_end(predictor, start_time):
-    print("Predictions completed in {:.2f}s".format(time.time() - start_time))
-    
-    for result in predictor.results:
-        for box in result.boxes:
-            classificationIndex = box.cls[0].item()
-            detected_object = result.names[classificationIndex]
-            print(f"Object: {detected_object}, Confidence { box.conf[0].item()}")
-            # print(box)
+    return output_folder
             
-def detection_from_bbox(yolo_box, detected_object, camera_details : CameraDetails):
+def detection_from_bbox(yolo_box, detected_object, camera_details : CameraDetails, print_details=False):
     """
     Calculate the object location and size from the bounding box coordinates.
     
@@ -64,7 +57,8 @@ def detection_from_bbox(yolo_box, detected_object, camera_details : CameraDetail
     az_angle_rad = math.radians(polar_range_data[0])
     el_angle_rad = math.radians(polar_range_data[1])
     distance = polar_range_data[2]
-    print(f"Object: {detected_object}, Distance: {distance}, Azimuth Deg: {polar_range_data[0]}, Elevation Deg: {polar_range_data[1]}")
+    if print_details:
+        print(f"Object: {detected_object}, Distance: {distance}, Azimuth Deg: {polar_range_data[0]}, Elevation Deg: {polar_range_data[1]}")
     
     # Calculate the horizontal distance (on the ground)
     distance_horizontal = distance * math.cos(el_angle_rad)
@@ -73,15 +67,14 @@ def detection_from_bbox(yolo_box, detected_object, camera_details : CameraDetail
     x = distance_horizontal * math.sin(az_angle_rad)  # Horizontal distance in the x direction
     y = distance * math.sin(el_angle_rad)  # Vertical distance in the y direction
     
+    return DetectionDetails(detected_object, [x, 0.2, y , 0.2])
     
-    return DetectionDetails(detected_object, [x, 0, y , 0])
-    
-def track_objects(stop_event = mp.Event(), video_config = VideoConfiguration, data_queue : mp.Queue = None):
+def track_objects(stop_event, video_config : VideoConfiguration, start_time : pd.Timestamp, data_queue : mp.Queue = None):
     ### PARAMs to the program
     model_weights = video_config.modelWeights
     save_raw_img = video_config.saveRawImages
     save_detection_video = video_config.saveProcessedVideo
-    output_directory = video_config.outputDirectory  
+    output_directory = video_config.outputDirectory
     source = video_config.videoSource
 
     confidence_threshold = video_config.confidenceThreshold
@@ -98,7 +91,7 @@ def track_objects(stop_event = mp.Event(), video_config = VideoConfiguration, da
     
     camera = video_config.camera_details
     
-    output_folder = setup_output_folders(output_directory, save_raw_img)
+    output_folder = setup_output_folders(output_directory, save_raw_img, start_time)
     model = YOLO(model_weights)
     # model.add_callback("on_predict_batch_end", on_predict_batch_end)
 
@@ -125,16 +118,13 @@ def track_objects(stop_event = mp.Event(), video_config = VideoConfiguration, da
             detected_object = result.names[classificationIndex]
             # print(f"Object: {detected_object}, Confidence { box.conf[0].item()}")
             
-            detection = detection_from_bbox(box, detected_object, camera_details=camera)
+            detection = detection_from_bbox(box, detected_object, camera_details=camera, print_details=video_config.printDetectedObjects)
             
             detections.append(detection)
         
         # If a data_queue is provided, put the detections into the queue
         if data_queue is not None and len(detections) > 0:
             data_queue.put(DetectionsAtTime(detectionTimestamp, IMAGE_DETECTION_TYPE, detections))
-            
-        # For debugging purposes, add 1 second delay between frames
-        time.sleep(0.1)
 
 if __name__ == "__main__":
     video_config = VideoConfiguration()

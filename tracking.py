@@ -43,8 +43,9 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot
                 
                 tracker.update_tracks(detections, timestamp, type=dataType)
                 count += 1
-                if (count % 300 == 0):
-                    tracker.show_tracks_plot()
+                
+                if count % 100 == 0:
+                    tracker.print_current_tracks(interval = 5)
             except mp.queues.Empty:
                 pass
 
@@ -69,8 +70,7 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot
                 # Convert time_str to datetime object using the provided format                  
                 # timestamp = datetime.strptime(time_str, '%Y-%m-%d %H-%M-%S')
                 
-                tracker.update_tracks(detection_array, timestamp)
-                tracker.print_current_tracks(interval = 1) # remove tracks older than 1 second for now
+                tracker.update_tracks(detection_array, timestamp) # remove tracks older than 1 second for now
                 
                 # if (len(tracking.timesteps) % 50 == 0):
                 #     tracking.show_tracks_plot()
@@ -82,8 +82,8 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot
                 print(f"Error processing radar data: {e}")
                 pass
     
-    tracker.print_current_tracks()
     tracker.show_tracks_plot()
+    tracker.print_current_tracks(interval = 1)
             
 def plot_data(plot_queue: mp.Queue, stop_event):
     # import matplotlib
@@ -164,15 +164,6 @@ if __name__ == '__main__':
     radar_data_queue = None
     image_data_queue = None
     plot_data_queue = None
-    
-    # Create the radar tracking configuration, process, queue to move data if not disabled
-    if not args.skip_radar:
-        radar_config = RadarConfiguration(config_path=args.radar_config)
-        radar_config = update_radar_config(radar_config, args) # Update the radar configuration with the command line arguments
-        
-        radar_data_queue = mp.Queue()
-        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, radar_config, start_time, radar_data_queue, plot_data_queue))
-        radar_proc.start()
       
     # Create the video tracking configuration, process, queue to move data
     if not args.skip_video:
@@ -181,8 +172,19 @@ if __name__ == '__main__':
         
         image_data_queue = mp.Queue()
         with torch.no_grad():
-            video_proc = mp.Process(name="Video Data Coll.", target=track_objects, args=(stop_event, video_config, image_data_queue))
+            video_proc = mp.Process(name="Video Data Coll.", target=track_objects, args=(stop_event, video_config, start_time, image_data_queue))
             video_proc.start()  
+    
+    # Create the radar tracking configuration, process, queue to move data if not disabled
+    if not args.skip_radar:
+        if not args.skip_video: # Add a delay to allow the video process to start before the radar process
+            time.sleep(args.radar_start_delay)
+        radar_config = RadarConfiguration(config_path=args.radar_config)
+        radar_config = update_radar_config(radar_config, args) # Update the radar configuration with the command line arguments
+        
+        radar_data_queue = mp.Queue()
+        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, radar_config, start_time, radar_data_queue, plot_data_queue))
+        radar_proc.start()
       
     # Create the object tracking configuration, process, queue to move data      
     if not args.skip_tracking:
@@ -201,7 +203,6 @@ if __name__ == '__main__':
     #     plot_data(plot_data_queue, stop_event) # Start the plot data process
     
     try:
-        print("Starting the tracking processes.")
         while True:
             user_input = input("Type 'q' and hit ENTER to quit: ")
             if user_input.lower() == 'q':
@@ -217,4 +218,5 @@ if __name__ == '__main__':
         if not args.skip_tracking:
             tracking_proc.join()
 
-    print(f"Tracking duration: {time.time() - start_time:.2f} seconds")
+    duration = time.time() - start_time.timestamp()
+    print(f"Tracking duration: {duration:.2f} seconds")

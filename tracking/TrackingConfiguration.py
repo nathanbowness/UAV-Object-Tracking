@@ -48,7 +48,7 @@ class TrackingConfiguration:
             'trackTailLength': 0.1,
             'maxTrackQueueSize': 200,
             'showTrackingPlot': False,
-            'saveTrackingResults': True,
+            'saveTrackingResults': False,
             'outputDirectory': '/output'
         }
 

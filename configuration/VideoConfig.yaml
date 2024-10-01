@@ -11,14 +11,13 @@ confidenceThreshold: 0.3
 iouThreshold: 0.5
 videoStream: True
 
-# Configuration for showing the Live Video During Yolo Processing 
+# Configuration for showing the Live Video During Yolo Processing
 showBoxesInVideo: True
 showVideo: False
+printDetectedObjects: False # Print the detected objects in the console as noticed
 
 # Camera Details
 cameraHorizontalFOV: 170
 cameraZoomFactor: 1.0
 imageWidth: 640
 imageHeight: 352
-
-
