@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 import multiprocessing as mp
+import time
 
 from radar.cfar import get_range_bin_for_indexs
 from radar.configuration.RunType import RunType
@@ -56,7 +57,7 @@ class RadarTracking():
         Process the radar data from the radar module until the stop event is set.
         """
         if self.config.record_data:
-            print(f"Running radar tracking on live data. Recording raw results to folder: {self.config.output_path}")
+            print(f"Running radar tracking on live data. Recording raw results to folder: {self.output_dir}")
             os.makedirs(self.output_dir, exist_ok=True)
             self.export_radar_config_to_file(self.output_dir)
         else:
@@ -67,6 +68,11 @@ class RadarTracking():
         
         while not stop_event.is_set():
             voltage_data = get_td_data_voltage(self.radar_module)
+            if voltage_data is None:
+                # There was likely an error - reset error code, try again
+                self.radar_module.error = False
+                continue
+                 
             if self.config.record_data:
                 voltage_data.print_data_to_file(self.output_dir)
             
@@ -99,7 +105,8 @@ class RadarTracking():
         # TODO - convert the TDData to FDDataMatrix, for processing.. Need FD for this (or do it in the RadarWindow itself)
         # self.radar_window.add_raw_record(td_data)
         # self.radar_window.calculate_detections(record_timestamp=td_data.timestamp)
-            
+        
+        time.sleep(0.2) # Simulate the processing time
         # Until we have enough records for CFAR or analysis, just continue 
         if(len(self.radar_window.get_raw_records()) < self.radar_window.required_cells_cfar):
             return
@@ -129,7 +136,7 @@ class RadarTracking():
             f"Ramp Time [ms]:\t{self.config.ramp_time_fmcw_chirp}\n"
             f"Attenuation [dB]:\t{sysParmas.atten}\n"
             f"Bin Size [mm]:\t{formatted_bin_size_mm}\n"
-            f"Number of Samples:\t512\n"
+            f"Number of Samples:\t1024\n"
             f"Bin Size [Hz]:\t{sysParmas.freq_bin}\n"
             f"Zero Pad Factor:\t{sysParmas.zero_pad}\n"
             f"Normalization:\t{sysParmas.norm}\n"

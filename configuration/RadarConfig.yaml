@@ -24,11 +24,11 @@ cfarParams:
 run: LIVE # Options are LIVE, RERUN
 sourcePath: "/data/radar/run2-TD/" # Path to the data to be processed for RERUN mode
 
-recordData: true # Record radar data to disk
+recordData: True # Record radar data to disk
 recordDataPath: "/output" # Path to the data to be recorded
 
 # How many Radar results to keep in the buffer for analysis and CFAR 
 processingWindow: 200
 
 # Print radar runtime settings to console on startup
-printSettings: true
+printSettings: True
