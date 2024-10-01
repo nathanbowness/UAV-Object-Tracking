@@ -5,11 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Tracking",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tracking.py",
+            "args": "",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Tracking: Video Only - Local Video",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
-            "args": "--source ${workspaceFolder}/yolo_video_object_tracking/video_samples/M0101.mp4 --skip-radar",
+            "args": "--video-source /data/video/M0101.mp4 --skip-radar",
             "console": "integratedTerminal"
         },
         {
@@ -33,14 +41,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
-            "args": "--skip-video --skip-tracking --radar-from-file --radar-source /data/radar/run1-TD",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Yolo V8 Tracking",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/video/object_tracking_yolo_v8.py",
+            "args": "--skip-video --skip-tracking --radar-from-file --radar-source /data/radar/run2-TD",
             "console": "integratedTerminal"
         },
         {

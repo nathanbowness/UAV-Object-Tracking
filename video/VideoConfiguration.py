@@ -41,6 +41,7 @@ class VideoConfiguration:
             'videoStream': True,
             'showBoxesInVideo': True,
             'showVideo': False,
+            'printDetectedObjects': False,
             'cameraHorizontalFOV': 90,
             'cameraZoomFactor': 1.0,
             'imageWidth': 1920,

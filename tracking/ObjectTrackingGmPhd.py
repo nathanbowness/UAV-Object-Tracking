@@ -69,7 +69,8 @@ def get_object_tracking_gm_phd(start_time, tracking_config: TrackingConfiguratio
         clutter_rate=tracking_config.clusterRate,
         merge_threshold=tracking_config.mergeThreshold,
         prune_threshold=tracking_config.pruneThreshold,
-        state_threshold=tracking_config.stateThreshold
+        state_threshold=tracking_config.stateThreshold,
+        show_plot=tracking_config.showTrackingPlot
     )
 
 
@@ -93,7 +94,8 @@ class ObjectTrackingGmPhd():
                  clutter_rate: float = 7.0,
                  merge_threshold: float = 5, # Threshold Squared Mahalanobis distance
                     prune_threshold: float = 1E-8, # Threshold component weight
-                    state_threshold: float = 0.25
+                    state_threshold: float = 0.25,
+                    show_plot: bool = False
                  ):
     
         self.start_time = start_time
@@ -102,6 +104,7 @@ class ObjectTrackingGmPhd():
         self.cluster_distance = cluster_distance
         self.default_cov = default_cov
         self.tracking_meas_area = tracking_meas_area
+        self.show_plot = show_plot
         
         self.transition_model = CombinedLinearGaussianTransitionModel([ConstantVelocity(expected_velocity),
                                                                        ConstantVelocity(expected_velocity)])
@@ -230,6 +233,11 @@ class ObjectTrackingGmPhd():
         self.tracker_count += 1
     
     def show_tracks_plot(self):
+        
+        # If the plot is not configured, return
+        if not self.show_plot:
+            return
+        
         if (len(self.timesteps) < 5):
             return None
         
@@ -253,17 +261,13 @@ class ObjectTrackingGmPhd():
         # Define the time threshold for filtering states
         time_threshold = current_time - timedelta(seconds=interval)
         
-         # Define the time threshold for filtering states
-        # Iterate through each track in the deque
-        for track in self.tracks:
-            
-            if track.state.timestamp < time_threshold:
-                track.states = None
-            
+        # Iterate through each track in the set and collect tracks to remove
+        tracks_to_remove = {track for track in self.tracks if track.state.timestamp < time_threshold}
+        
         # Remove the entire track if all states are too old
-        self.tracks = deque([track for track in self.tracks if track.states is not None])
+        self.tracks -= tracks_to_remove
     
-    def print_current_tracks(self, current_time: datetime = datetime.now(), interval : int = 10):
+    def print_current_tracks(self, current_time: datetime = datetime.now(), interval : int = 5):
         """
         Print the current tracks with their coordinates.
         :param current_time: The current time to compare states against.
@@ -271,7 +275,7 @@ class ObjectTrackingGmPhd():
         """
         
         self.find_tracks_remove_older_tracks(current_time, interval)
-        print(f"There are currently {len(self.tracks)} tracks.")
+        print(f"There are currently {len(self.tracks)} tracks identified in the last {interval} seconds.")
         
         coordinates = []
         # Iterate through each tracks, find the x, y coordinates to print the current tracks

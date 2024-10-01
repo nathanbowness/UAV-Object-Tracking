@@ -30,6 +30,7 @@ def define_argument_parser() -> argparse.ArgumentParser:
     
     # Output folder for all the results
     parser.add_argument('--output-folder', type=str, default=None, help='output folder for all results to be saved to')
+    parser.add_argument('--radar-start-delay', type=int, default=5, help='delay in seconds before starting the radar after the video processing starts')
     
     # Options for disabling parts of the program, but default video and radar tracking are enabled. Plots are not.
     parser.add_argument('--skip-video', action='store_true', help='skip video based tracking')
