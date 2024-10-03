@@ -30,14 +30,32 @@ theme:
   navigation:
     sections: false  # Ensure sidebar sections are disabled
 
+# Validation settings https://www.mkdocs.org/user-guide/configuration/#validation
+validation:
+  nav:
+    omitted_files: info
+    not_found: warn
+    absolute_links: info
+  links:
+    absolute_links: relative_to_docs
+    anchors: warn
+    unrecognized_links: warn
+
+
 nav:
-  - Home: README.md
   - Configuration:
     - Configuration: configuration/configuration.md
+    - CLI Arguments: configuration/cliArguments.md
+    - Docker Image Details: configuration/dockerImageDetails.md
+  - Instructions:
+    - Running In Docker: guides/runningInDocker.md
+    - Running the Radar Only: guides/runningTheRadar.md
+    - Running the Video Processing Only: guides/runningVideoProcessing.md
+    - Running On Previously Collected Data: guides/runningOnCollectedData.md
   - Setup: 
     - Setting Up Dev Environment: setup/devEnvironment.md
-    - Setting Up Webcam Calibration: setup/calibratingWebcam.md
-  - Object Tracking with UAV: object-tracking-with-uav.md
+    - Enable Webcam In Container: setup/usingWebcamInContainer.md
+    - Calibrating BB Coefficients: setup/calibratingBBCoeff.md
 
 markdown_extensions:
   - pymdownx.superfences:

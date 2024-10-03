@@ -1,10 +1,9 @@
 # Object Tracking using Yolov8 and FMCW Radar
 
-Currently in progress. But this project's goal is to create software that can be used to track UAV using both live Radar Sensor data and Video.
-This is done as part of a CSI 6900 project.
+The project is **currently in progress**. But this project's goal is to create software that can be used to track UAV using both live radar sensor data and video using yolo.
 
-# Development
-Please see the [Development Environment](./docs/devEnviroment.md) Documentation for more details on running this locally.
+# Development and Running Locally
+Please see the [Development Environment](./docs/devEnviroment.md) Documentation for more details on running this project locally and developing.
 
 # Run in Docker
 This project can be fully run and configured from a docker container. Follow the steps below to get the image build and running in a container.
@@ -35,16 +34,26 @@ docker tag nbowness/uav-experiments:latest-jetson-jetpack5 tracking-image
 ```
 
 ## Running the Container On WSL, Linux
+Below includes a series of commands that can be used to interact and run the container. For a full list of configuration options, please see that segement of the document.
 ```bash
-# Interactively launch the container. Example has configuration, data and output volumes mounted. Then you can run commands as you'd like. NOTE this has no UI elements only console
+# Run the container interactively, letting you access the contents
+docker run -it tracking-image  
+
+# Run the tracking algorithm with default parameters
+docker run -it tracking-image python3 tracking.py --skip-radar
+
+# Interactively launch the container, with configuration, data and output volumes mounted. Please see the configuration section for more details. 
+# Once launched you can run commands as you'd like
 docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image
 
-# Run elements, non interactive
+# Run tracking without radar enabled
 docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image python3 tracking.py --skip-radar
+
+# Run tracking without video enabled, and a different radar IP
+docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image python3 tracking.py --skip-video --radar-ip 10.0.1.60
 
 # Run with UI elements active.
 xhost +local:docker && docker run -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v ~/.Xauthority:/root/.Xauthority -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -v "$(pwd)"/output:/output -it tracking-image
-
 
 # Run the tracking software using local webcam, with no UI elements active
 docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -it tracking-image python3 tracking.py --skip-radar --view-img --device=/dev/video0:/dev/video0 --video-config /configuration/VideoConfig_AnkerCamera.yaml 
@@ -52,6 +61,7 @@ docker run -v "$(pwd)"/data:/data -v "$(pwd)"/configuration:/configuration -it t
 
 ## Running the Container On Jetson
 When running on Jetson. Jetson equips iGPU rather than the dGPU. The OS is also a customized l4t rather than standard Linux. You can use --runtime=nvidia and by default, it will enable GPU for usage.
+All commands above are still valid as well, just use the jetson base image and include `--ipc=host --runtime=nvidia`. To help synchronize the start time of the radar and video processing adding a 30 seconds delay to starting the radar is helpful. Yolo takes approx 30 seconds to install on the Jetson.
 ```bash
 # Run the container interactively
 docker run -v "$(pwd)"/data:/data -v "$(pwd)"/output:/output --ipc=host --runtime=nvidia -it tracking-image
@@ -61,19 +71,6 @@ python3 tracking.py --radar-start-delay 30 # Add 30 second delay, since loading 
 
 ### Easily overwrite configuration in the container
 * Details about overwriting this.. How to change config, etc....
-
-# Usage:
-```python
-
-# Run the tracking using an mp4 video, disable the radar tracking portion
-python3 tracking.py --weights yolov8n.pt --source data/video/M0101.mp4 --conf-thres 0.4 --no-download --view-img --skip-radar
-
-# Run the tracking using a youtube link, disable the radar tracking portion
-python3 tracking.py --weights yolov8n.pt --source "https://youtu.be/LNwODJXcvt4" --conf-thres 0.4 --no-download --view-img --skip-radar
-
-# Run just the radar tracking from recorded radar data
-python3 tracking.py --weights yolov8n.pt --no-download --view-img --skip-video --radar-from-file --radar-source data/radar/run1_FDs
-```
 
 # Folder Structure
 This project uses the Ultrlytics images as the [base images](https://github.com/ultralytics/ultralytics/tree/main/docker) for this project. Specifically it uses the normal Dockerfile and the [Dockerfile](https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile) and the [Dockerfile-jetson-jetpack5](https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile-jetson-jetpack5)

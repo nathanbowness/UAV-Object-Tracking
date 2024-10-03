@@ -11,11 +11,11 @@ attenuation: 0
 # Radar connection configuration
 ethernetParams:
   ethernetPort: 1024
-  ethernetIp: "10.0.0.59" # IP to connect to the radar with
+  ethernetIp: "192.168.0.2" # IP to connect to the radar with
 
 # Radar signal processing configuration
 cfarParams:
-  cfarNumGuard: 2
+  cfarNumGuard: 5
   cfarNumTrainingCells: 10
   cfarThreshold: 10
   cfarType: "CASO" # Options are CASO, LEADING_EDGE
