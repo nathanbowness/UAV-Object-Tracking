@@ -11,23 +11,6 @@ def define_argument_parser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(description='Object Tracking using Radar and Video')
     
-    # parser = argparse.ArgumentParser(description='Object Tracking using Radar and Video')
-    # parser.add_argument('--weights', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
-    # parser.add_argument('--download', action='store_true', help='download model weights automatically')
-    # parser.add_argument('--no-download', dest='download', action='store_false')
-    # parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
-    # parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-    # parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
-    # parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 0 2 3')
-    # parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
-    # parser.add_argument('--augment', action='store_true', help='augmented inference')
-    # parser.add_argument('--update', action='store_true', help='update all models')
-    # parser.add_argument('--project', default='runs/detect', help='save results to project/name')
-    # parser.add_argument('--name', default='object_tracking', help='save results to project/name')
-    # parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    # parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
-    # parser.add_argument('--blur', action='store_true', help='blur detections')
-    
     # Output folder for all the results
     parser.add_argument('--output-folder', type=str, default=None, help='output folder for all results to be saved to')
     parser.add_argument('--radar-start-delay', type=int, default=5, help='delay in seconds before starting the radar after the video processing starts')
@@ -52,6 +35,7 @@ def define_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument('--model-weights', type=str, default=None, help='model weights path. yolo wil attempt to download the weight if the arg is not a path')
     parser.add_argument('--video-source', type=str, default=None, help='source of the video data, supports all yolo default options')
     parser.add_argument('--disable-save-video', action='store_true', help='disable saving the video data')
+    parser.add_argument('--show-video-live ', action='store_true', help='if the live video feed should be shown, this requires a display')
     
     # Options for the tracking configuration
     parser.add_argument('--tracking-config', type=str, default='/configuration/TrackingConfig.yaml', help='tracking configuration file path')
@@ -93,6 +77,8 @@ def update_video_config(config:VideoConfiguration, args:argparse.Namespace) -> V
         config.videoSource = args.video_source
     if args.disable_save_video:
         config.saveProcessedVideo = False
+    if args.show_video_live:
+        config.showVideo = True
     
     return config
 
