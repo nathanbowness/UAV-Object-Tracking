@@ -1,6 +1,11 @@
 # Object Tracking using Yolov8 and FMCW Radar
 
-The project is **currently in progress**. But this project's goal is to create software that can be used to track UAV using both live radar sensor data and video using yolo.
+This project's goal is to create software that can be used to track objects from a UAV using both live radar sensor data and video using Yolo.
+
+# Documentation
+
+The project is **currently in progress**. 
+The best way to view the documentation for this project is to visit the [documentation's website](https://nathanbowness.github.io/UAV-Object-Tracking/). That will have the best formatting, and more information that provided here. This README contains some example, and high level documentation/examples. 
 
 # Development and Running Locally
 Please see the [Development Environment](./docs/devEnviroment.md) Documentation for more details on running this project locally and developing.

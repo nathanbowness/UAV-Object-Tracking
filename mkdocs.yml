@@ -1,6 +1,11 @@
 site_name: "UAV Tracking Experiments"
 site_description: "This is a documentation site for the UAV Tracking Experiments project."
 site_url: "https://nathanbowness.github.io/UAV-Object-Tracking/"
+# Setup github repository details on webpage
+repo_url: "https://github.com/nathanbowness/UAV-Object-Tracking"
+repo_name: UAV Tracking
+edit_uri: tree/main/docs
+
 docs_dir: "docs/"
 site_dir: "site/"
 theme:
@@ -27,6 +32,14 @@ theme:
         name: Switch to dark mode
   features:
     - navigation.top  # Make sure top navigation is enabled
+    - navigation.tabs
+    - search
+    - search.share
+    - search.suggest
+    - content.action.view # Enable people to view the source code for docs
+    - content.tabs.link # Link up the tabs on a page, so if someone selects a language/type all tabs will change
+    - content.code.copy # Enable code copy button
+    - navigation.top # Enable back to top button
   navigation:
     sections: false  # Ensure sidebar sections are disabled
 
@@ -43,23 +56,46 @@ validation:
 
 
 nav:
+  - Home: index.md
+  - Quickstart:
+    - Running In Docker: guides/runningInDocker.md
+    - Running Radar Processing Only: guides/runningTheRadar.md
+    - Running Video Processing Only: guides/runningVideoProcessing.md
+    - Running With Collected Data: guides/runningOnCollectedData.md
+    - Running With Visuals: guides/runningWithVisuals.md
   - Configuration:
     - Configuration: configuration/configuration.md
     - CLI Arguments: configuration/cliArguments.md
-    - Docker Image Details: configuration/dockerImageDetails.md
-  - Instructions:
-    - Running In Docker: guides/runningInDocker.md
-    - Running the Radar Only: guides/runningTheRadar.md
-    - Running the Video Processing Only: guides/runningVideoProcessing.md
-    - Running On Previously Collected Data: guides/runningOnCollectedData.md
+    - Docker Image Details: configuration/imageDetails.md
   - Setup: 
     - Setting Up Dev Environment: setup/devEnvironment.md
     - Enable Webcam In Container: setup/usingWebcamInContainer.md
     - Calibrating BB Coefficients: setup/calibratingBBCoeff.md
 
 markdown_extensions:
+  # Enable mermaid diagrams
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+  # Enable admonitions - i.e. collapsible sections
+  - admonition
+  - pymdownx.details
+  # Enabled tabbed code blocks
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  
+extra_javascript:
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
+
+extra_css:
+  - https://unpkg.com/katex@0/dist/katex.min.css

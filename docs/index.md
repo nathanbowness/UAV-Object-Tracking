@@ -7,7 +7,7 @@ This project's goal is to create software that can be used to track objects usin
 ## Where to Start
 
 * Get a quickstart by running this software in a docker container - [Running in Docker](./guides/runningInDocker.md)
-* Customizing the argument run in the container - [Configuration](./configuration/configuration.md)
+* Customizing the arguments run in the container - [Configuration](./configuration/configuration.md)
 
 ## Development
 
