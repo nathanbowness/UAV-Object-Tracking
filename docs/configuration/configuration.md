@@ -79,7 +79,7 @@ The radar configuration can be found in the YoloConfig.yaml file.
     filters:
     # GM PHD 
     gmPHD:
-        birthCovariance: 5 # covariance of the birth state in a distance of meters
+        birthCovariance: 200 # covariance of the birth state in a distance of meters - by default this will set to the maximum resolution range of the sensors!
         expectedVelocity: 1 # expected velocity of the tracked object in meters per second
         noiseCovarianceDistance: 1 # covariance of the noise in a distance of meters
         defaultCovarianceDistance: 1 # default covariance of the tracked object in a distance of meters

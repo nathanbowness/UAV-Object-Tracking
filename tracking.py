@@ -44,8 +44,8 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot
                 tracker.update_tracks(detections, timestamp, type=dataType)
                 count += 1
                 
-                if count % 100 == 0:
-                    tracker.print_current_tracks(interval = 5)
+                if count % 25 == 0:
+                    tracker.print_current_tracks(remove_tracks=False, interval=2)
             except mp.queues.Empty:
                 pass
 
@@ -83,7 +83,7 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot
                 pass
     
     tracker.show_tracks_plot()
-    tracker.print_current_tracks(interval = 1)
+    tracker.print_current_tracks(remove_tracks=True, interval=1)
             
 def plot_data(plot_queue: mp.Queue, stop_event):
     # import matplotlib
