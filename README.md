@@ -5,7 +5,7 @@ This project's goal is to create software that can be used to track objects from
 # Documentation
 
 The project is **currently in progress**. 
-The best way to view the documentation for this project is to visit the [documentation's website](https://nathanbowness.github.io/UAV-Object-Tracking/). That will have the best formatting, and more information that provided here. This README contains some example, and high level documentation/examples. 
+The best way to view the documentation for this project is to visit the [documentation's website](https://nathanbowness.github.io/UAV-Object-Tracking/). That will have the best formatting, and more information than provided here. This README contains some examples, and high level documentation/examples. 
 
 # Development and Running Locally
 Please see the [Development Environment](./docs/devEnviroment.md) Documentation for more details on running this project locally and developing.
@@ -39,13 +39,14 @@ docker tag nbowness/uav-experiments:latest-jetson-jetpack5 tracking-image
 ```
 
 ## Running the Container On WSL, Linux
-Below includes a series of commands that can be used to interact and run the container. For a full list of configuration options, please see that segement of the document.
+Below includes a series of commands that can be used to interact and run the container. For a full list of options, and some quickstart guides please see [Running In Docker](./docs/guides/runningInDocker.md). 
+Below will show a few examples to get you started.
 ```bash
 # Run the container interactively, letting you access the contents
 docker run -it tracking-image  
 
 # Run the tracking algorithm with default parameters
-docker run -it tracking-image python3 tracking.py --skip-radar
+docker run -it tracking-image python3 tracking.py
 
 # Interactively launch the container, with configuration, data and output volumes mounted. Please see the configuration section for more details. 
 # Once launched you can run commands as you'd like
@@ -70,12 +71,15 @@ All commands above are still valid as well, just use the jetson base image and i
 ```bash
 # Run the container interactively
 docker run -v "$(pwd)"/data:/data -v "$(pwd)"/output:/output --ipc=host --runtime=nvidia -it tracking-image
+
 # After being inside the container, you can run the following:
 python3 tracking.py --radar-start-delay 30 # Add 30 second delay, since loading the Yolo model on Jetson takes a while
 ```
 
-### Easily overwrite configuration in the container
-* Details about overwriting this.. How to change config, etc....
+### Configuration in the container
+* To configure the container, there are 2 options. Adding new configuration files, or using the CLI. Details for both are linked below:
+* [Configuration Using CLI](./docs/configuration/cliArguments.md)
+* [Configuration Using Config Files](./docs/configuration/configuration.md) 
 
 # Folder Structure
 This project uses the Ultrlytics images as the [base images](https://github.com/ultralytics/ultralytics/tree/main/docker) for this project. Specifically it uses the normal Dockerfile and the [Dockerfile](https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile) and the [Dockerfile-jetson-jetpack5](https://github.com/ultralytics/ultralytics/blob/main/docker/Dockerfile-jetson-jetpack5)
@@ -93,30 +97,30 @@ flowchart LR
 
     subgraph tracking["Tracking.py"]
         %%  Radar Processing SubGraph
-        subgraph radarProc["**Radar_process.py**"]
+        subgraph radarProc["**RadarProcess.py**"]
             style desc1 text-align:left
-            desc1["`1 Collect Data
-            2 Data Processing
-            3 Put detection into Queue`"]
+            desc1["`1 Collect data
+            2 Data drocessing
+            3 Put detection into queue`"]
         end
 
         %%  Image Processing SubGraph
-        subgraph imageProc["`**Image_process.py**`"]
+        subgraph imageProc["`**ImageProcess.py**`"]
             style desc2 text-align:left
-            desc2["`1 Collect Image
-            2 Data Processing
-            3 Put detection into Queue`"]
+            desc2["`1 Collect image
+            2 Data processing
+            3 Put detection into queue`"]
         end
         Queue[["MP Queue"]]
-        subgraph trackProc["`**Object_tracking.py**`"]
+        subgraph trackProc["`**ObjectTracking.py**`"]
             style desc3 text-align:left
-            desc3["`1 Collect Image
-            2 Data Processing
-            3 Put detection into Queue`"]
+            desc3["`1 Read data from queue
+            2 Update tracks based of new data
+            3 Report current tracks`"]
         end
     end
-    Radar["fa:fa-satellite-dish"]:::bigNode
-    Video["fa:fa-camera"]:::bigNode
+    Radar[["Radar"]]:::bigNode
+    Video[[Video]]:::bigNode
 
     Radar <--> radarProc
     Video <--> imageProc

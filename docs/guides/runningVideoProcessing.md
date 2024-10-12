@@ -11,9 +11,17 @@ This will walk you through how to modify the container running tracking, but als
 This configuration is useful if you'd only like to collect video data, and are not worried about tracking anything. This is useful for testing video data collection and ensure the model is running. It's also useful to see the Yolo performance by itself
 
 1.  Run the Container Interactively
-``` bash
-docker run -it tracking-image
-```
+=== "Linux"
+
+    ``` bash
+    docker run -it tracking-image
+    ```
+
+=== "Jetson5"
+
+    ``` bash
+    docker run --ipc=host --runtime=nvidia -it
+    ```
 
 2. Run the tracking program, with radar processing and all tracking disabled.
 ```bash
@@ -24,9 +32,19 @@ python3 tracking.py --skip-radar --skip-tracking
 This configuration is useful if you'd only like to collect video data and see how it influences the tracking.
 
 1.  Run the Container Interactively
-``` bash
-docker run -it tracking-image
-```
+
+
+    === "Linux"
+
+        ``` bash
+        docker run -it tracking-image
+        ```
+
+    === "Jetson5"
+
+        ``` bash
+        docker run --ipc=host --runtime=nvidia -it tracking-image
+        ```
 
 2. Run the tracking program, with video processing and radar tracking disabled.
 ```bash

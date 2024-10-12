@@ -40,6 +40,8 @@ from collections import deque
 
 from tracking.TrackingConfiguration import TrackingConfiguration
 
+import pandas as pd
+
 def get_object_tracking_gm_phd(start_time, tracking_config: TrackingConfiguration):
     """
     Get the object tracking GM PHD filter based on the tracking configuration.
@@ -85,7 +87,7 @@ class ObjectTrackingGmPhd():
                  track_tail_length : float = 0.001,
                  tracking_meas_area : int =  200,
                  max_deque_size: int = 200,
-                 birth_covar: int = 5,
+                 birth_covar: int = 200,
                  expected_velocity: float=1,
                  noise_covar: list = [1, 1],
                  default_cov: list = [1, 0.3, 1, 0.3],
@@ -171,11 +173,12 @@ class ObjectTrackingGmPhd():
 
         return centroids
         
-    def update_tracks(self, detections: List[DetectionDetails], timestamp: datetime, type: str = None):
+    def update_tracks(self, detections: List[DetectionDetails], timestamp: datetime, type: str = None, print_coord: bool = False):
         """
         detections: Nx4 array of detections, where N is the number of detections
         the 4 columns are [x, x_vel, y, y_vel]
         timestamp: timestamp of the detections
+        print_coord: if True, print the coordinates of the detections added to tracks
         """
         timestamp = timestamp.replace(microsecond=0)
         
@@ -211,6 +214,8 @@ class ObjectTrackingGmPhd():
         updated_states = self.updater.update(hypotheses)
         self.reduced_states = set(self.reducer.reduce(updated_states))
 
+        added_detect_to_print = []
+
         for reduced_state in self.reduced_states:
             if reduced_state.weight > 0.05:
                 self.all_gaussians[-1].append(reduced_state)  # Append to the current deque index
@@ -224,13 +229,39 @@ class ObjectTrackingGmPhd():
                     if tag in track_tags:
                         track.append(reduced_state)
                         self.tracks_by_time[-1].append(reduced_state)  # Append to the current deque index
+                        x_y = self.get_tracks_x_y(reduced_state)
+                        if x_y is not None:
+                            added_detect_to_print.append(x_y)
                         break
                 else:
                     new_track = Track(reduced_state)
                     self.tracks.add(new_track)
                     self.tracks_by_time[-1].append(reduced_state)
+                    x_y = self.get_tracks_x_y(reduced_state)
+                    if x_y is not None:
+                        added_detect_to_print.append(x_y)
         
         self.tracker_count += 1
+        
+        # Print all coordinate that were added to active tracks. Points not shown here, were not associated with a track!
+        if print_coord and len(added_detect_to_print) > 0:
+            # Create a formatted string with all coordinates on a single line
+            formatted_coords = ", ".join([f"({coord[0]:.1f}, {coord[1]:.1f})" for coord in added_detect_to_print])
+            # formatted_coords = ", ".join([f"(x: {coord[0]:.1f}, y: {coord[1]:.1f})" for coord in coordinates]) # Alternative formatting with x, y labels
+            print(f"Detections associated to tracks: {formatted_coords}")
+    
+    def get_tracks_x_y(self, state):
+        """
+        Get the x, y coordinates of the track to print
+        """
+        # Get the first and third elements of the state_vector (assuming it has at least 4 elements)
+        x = state.state_vector[0, 0]
+        y = state.state_vector[2, 0]
+        # Append the (x, y) pair to the print_list
+        if abs(x) != 0 and abs(y) != 0:
+            return (x,y)
+        else:
+            return None
     
     def show_tracks_plot(self):
         
@@ -252,41 +283,55 @@ class ObjectTrackingGmPhd():
         plotter.fig.show("browser")
         print("Done plotting.")
     
-    def find_tracks_remove_older_tracks(self, current_time: datetime = datetime.now(), interval = 10):
+    def find_tracks_remove_older_tracks(self, 
+                                        current_time: datetime = datetime.now(),
+                                        remove_tracks = False, 
+                                        interval = 5):
         """
-        Find and remove states from tracks that are older than the last 'interval' seconds.
+        Find current tracks within an interval, return them. 
+        If remove_tracks is passed, remove older states
         :param current_time: The current time to compare states against.
+        :param remove_tracks: If True, remove states from older tracks that are older than the last 'interval' seconds.
         :param interval: The time interval in seconds for filtering states.
         """
         # Define the time threshold for filtering states
         time_threshold = current_time - timedelta(seconds=interval)
         
         # Iterate through each track in the set and collect tracks to remove
-        tracks_to_remove = {track for track in self.tracks if track.state.timestamp < time_threshold}
+        tracks_to_remove = {track for track in self.tracks if track.state.timestamp < time_threshold.replace(microsecond=0)}
         
         # Remove the entire track if all states are too old
-        self.tracks -= tracks_to_remove
+        current_tracks = self.tracks - tracks_to_remove
+        
+        # Remove the states from the tracks if the flag is set
+        if remove_tracks:
+            self.tracks = current_tracks
+        
+        return current_tracks
     
-    def print_current_tracks(self, current_time: datetime = datetime.now(), interval : int = 5):
+    def print_current_tracks(self, 
+                             current_time: datetime = datetime.now(), 
+                             remove_tracks = False,
+                             interval : int = 5):
         """
         Print the current tracks with their coordinates.
         :param current_time: The current time to compare states against.
+        :param remove_tracks: If True, remove states from older tracks that are older than the last 'interval' seconds.
         :param interval: The time interval in seconds for filtering states.
         """
         
-        self.find_tracks_remove_older_tracks(current_time, interval)
-        print(f"There are currently {len(self.tracks)} tracks identified in the last {interval} seconds.")
+        current_tracks = self.find_tracks_remove_older_tracks(current_time, remove_tracks=remove_tracks, interval=interval)
+        print(f"There are currently {len(current_tracks)} tracks identified in the last {interval} seconds.")
         
         coordinates = []
         # Iterate through each tracks, find the x, y coordinates to print the current tracks
-        for track in self.tracks:
+        for track in current_tracks:
             # Get the first and third elements of the state_vector (assuming it has at least 4 elements)
-            x = track.state.state_vector[0, 0]  # First element
-            y = track.state.state_vector[2, 0]  # Third element
-            # Append the (x, y) pair to the coordinates list
-            if abs(x) == 0 and abs(y) == 0:
+            x_y = self.get_tracks_x_y(track.state)
+            if x_y is None:
                 continue
-            coordinates.append((x, y))
+            # Append the (x, y) pair to the coordinates list
+            coordinates.append(x_y)
                 
         # Create a formatted string with all coordinates on a single line
         formatted_coords = ", ".join([f"({coord[0]:.1f}, {coord[1]:.1f})" for coord in coordinates])
@@ -294,10 +339,10 @@ class ObjectTrackingGmPhd():
         print(f"Coordinates of current tracks: {formatted_coords}")
     
 if __name__ == '__main__':
-    currentTime = datetime.now()
-    tracking_config = TrackingConfiguration()
     
-    tracking = get_object_tracking_gm_phd(currentTime, tracking_config)
+    currentTime = pd.Timestamp.now()
+    trackingConfiguration = TrackingConfiguration()
+    tracking = get_object_tracking_gm_phd(currentTime, trackingConfiguration)
     
     # General path create with 4 steady objects
     # tracking.update_tracks(np.array(([1, 1, 1, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=1))
@@ -309,21 +354,21 @@ if __name__ == '__main__':
     # tracking.update_tracks(np.array(([1, 1, 1, 1], [5, 1, 5, 1], [10, 1, 10, 1], [20, 1, 20, 1])), currentTime + timedelta(seconds=7))
     
     # Path tracking with 2 objects, then 1 object, then 2nd object re-appears. Based on path_points_to_deletion it may still be tracked by the same object (5 = same object, 2 = new object)
-    tracking.update_tracks(np.array(([1, 1, 1, 1], [5, 1, 5, 1])), currentTime + timedelta(seconds=1))
-    tracking.update_tracks(np.array(([1.5, 1, 1.5, 1], [5.5, 2, 5.5, 2])), currentTime + timedelta(seconds=2))
-    tracking.update_tracks(np.array(([1.2, 1, 1.2, 1], [6.8, 1, 6.8, 1])), currentTime + timedelta(seconds=3))
-    tracking.update_tracks(np.array(([1.4, 1, 1.4, 1], [7.2, 1, 5.9, 1])), currentTime + timedelta(seconds=4))
-    tracking.update_tracks(np.array(([1.7, 1, 1.7, 1], [6.6, 1, 5.5, 1])), currentTime + timedelta(seconds=5))
-    tracking.update_tracks(np.array(([1.8, 1, 1.8, 1], [6, 1, 5.2, 1])), currentTime + timedelta(seconds=6))
-    tracking.update_tracks(np.array(([1.6, 1, 2.4, 1], [5, 1, 4.5, 1])), currentTime + timedelta(seconds=7))
-    tracking.update_tracks(np.array(([1.5, 1, 2.6, 1],)), currentTime + timedelta(seconds=8))
-    tracking.update_tracks(np.array(([1.3, 1, 2.8, 1],)), currentTime + timedelta(seconds=9))
-    tracking.update_tracks(np.array(([1.0, 1, 2.9, 1],)), currentTime + timedelta(seconds=10))
-    tracking.update_tracks(np.array(([0.8, 1, 3.3, 1],)), currentTime + timedelta(seconds=11))
-    tracking.update_tracks(np.array(([0.7, 1, 3.5, 1],[4.8, 1, 4.2, 1])), currentTime + timedelta(seconds=12))
-    tracking.update_tracks(np.array(([0.6, 1, 3.7, 1],[4.6, 1, 4.6, 1])), currentTime + timedelta(seconds=13))
-    tracking.update_tracks(np.array(([0.5, 1, 3.8, 1],[4.4, 1, 4.8, 1])), currentTime + timedelta(seconds=14))
-    tracking.update_tracks(np.array(([0.3, 1, 4.2, 1],[4.2, 1, 5.2, 1])), currentTime + timedelta(seconds=15))
+    # tracking.update_tracks(np.array(([1, 1, 1, 1], [5, 1, 5, 1])), currentTime + timedelta(seconds=1))
+    # tracking.update_tracks(np.array(([1.5, 1, 1.5, 1], [5.5, 2, 5.5, 2])), currentTime + timedelta(seconds=2))
+    # tracking.update_tracks(np.array(([1.2, 1, 1.2, 1], [6.8, 1, 6.8, 1])), currentTime + timedelta(seconds=3))
+    # tracking.update_tracks(np.array(([1.4, 1, 1.4, 1], [7.2, 1, 5.9, 1])), currentTime + timedelta(seconds=4))
+    # tracking.update_tracks(np.array(([1.7, 1, 1.7, 1], [6.6, 1, 5.5, 1])), currentTime + timedelta(seconds=5))
+    # tracking.update_tracks(np.array(([1.8, 1, 1.8, 1], [6, 1, 5.2, 1])), currentTime + timedelta(seconds=6))
+    # tracking.update_tracks(np.array(([1.6, 1, 2.4, 1], [5, 1, 4.5, 1])), currentTime + timedelta(seconds=7))
+    # tracking.update_tracks(np.array(([1.5, 1, 2.6, 1],)), currentTime + timedelta(seconds=8))
+    # tracking.update_tracks(np.array(([1.3, 1, 2.8, 1],)), currentTime + timedelta(seconds=9))
+    # tracking.update_tracks(np.array(([1.0, 1, 2.9, 1],)), currentTime + timedelta(seconds=10))
+    # tracking.update_tracks(np.array(([0.8, 1, 3.3, 1],)), currentTime + timedelta(seconds=11))
+    # tracking.update_tracks(np.array(([0.7, 1, 3.5, 1],[4.8, 1, 4.2, 1])), currentTime + timedelta(seconds=12))
+    # tracking.update_tracks(np.array(([0.6, 1, 3.7, 1],[4.6, 1, 4.6, 1])), currentTime + timedelta(seconds=13))
+    # tracking.update_tracks(np.array(([0.5, 1, 3.8, 1],[4.4, 1, 4.8, 1])), currentTime + timedelta(seconds=14))
+    # tracking.update_tracks(np.array(([0.3, 1, 4.2, 1],[4.2, 1, 5.2, 1])), currentTime + timedelta(seconds=15))
     
     # 2 objects crossing eachother -- needs some help, has issues with crossovers
     # tracking.update_tracks(np.array(([1, 1, 1, 1], [1, 1, 5, 1])), currentTime + timedelta(seconds=1))
@@ -334,8 +379,47 @@ if __name__ == '__main__':
     # tracking.update_tracks(np.array(([6, 1, 6, 1], [4.2, 1, 2.2, 1])), currentTime + timedelta(seconds=6))
     # tracking.update_tracks(np.array(([7, 1, 7, 1], [5, 1, 2, 1])), currentTime + timedelta(seconds=7))
     
+    # Path tracking tests, with objects further apart, at 10m and 60+m. Birth should happen for both. Includes some missed measurements.
+    tracking.update_tracks(np.array(([10, 1, 10, 1], [62, 1, 20, 1])), currentTime)
+    currentTime = currentTime + timedelta(seconds=1)
     
-    tracking.print_current_tracks(currentTime + timedelta(seconds=15), 10)
+    tracking.update_tracks(np.array(([13, 1, 6, 1], [63, 1, 21, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    
+    tracking.update_tracks(np.array(([18, 1, 4, 1], [64, 1, 23, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    
+    tracking.update_tracks(np.array(([22, 1, 20, 1], [65, 1, 25, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    tracking.update_tracks(np.array(([23, 1, 3, 1], [66, 1, 27, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    
+    tracking.update_tracks(np.array(([26, 1, 1, 1], [68, 1, 29, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    tracking.update_tracks(np.array(([30, 1, -3, 1], [70, 1, 30, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    
+    tracking.update_tracks(np.array(([33, 1, -6, 1], [100, 1, 130, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    tracking.update_tracks(np.array(([-40, 1, -10, 1], [75, 1, 33, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    tracking.update_tracks(np.array(([36, 1, -13, 1], [73, 1, 36, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    tracking.update_tracks(np.array(([34, 1, -16, 1], [72, 1, 125, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    tracking.print_current_tracks(currentTime, remove_tracks=False, interval=5)
+    
+    tracking.update_tracks(np.array(([37, 1, -20, 1], [71, 1, 37, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    tracking.update_tracks(np.array(([40, 1, -19, 1], [69, 1, 40, 1])), currentTime, print_coord=True)
+    currentTime = currentTime + timedelta(seconds=1)
+    
+    tracking.update_tracks(np.array(([42, 1, -22.2, 1], [130, 1, 20, 1])), currentTime)
+    currentTime = currentTime + timedelta(seconds=1)
+    tracking.update_tracks(np.array(([44, 1, -24, 1], [66, 1, 43, 1])), currentTime)
+    currentTime = currentTime + timedelta(seconds=1)
+    
+    tracking.print_current_tracks(currentTime, remove_tracks=False, interval=1)
     tracking.show_tracks_plot()
     print("complete")
     
