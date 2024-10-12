@@ -24,30 +24,30 @@ flowchart LR
 
     subgraph tracking["Tracking.py"]
         %%  Radar Processing SubGraph
-        subgraph radarProc["**Radar_process.py**"]
+        subgraph radarProc["**RadarProcess.py**"]
             style desc1 text-align:left
-            desc1["`1 Collect Data
-            2 Data Processing
-            3 Put detection into Queue`"]
+            desc1["`1 Collect data
+            2 Data drocessing
+            3 Put detection into queue`"]
         end
 
         %%  Image Processing SubGraph
-        subgraph imageProc["`**Image_process.py**`"]
+        subgraph imageProc["`**ImageProcess.py**`"]
             style desc2 text-align:left
-            desc2["`1 Collect Image
-            2 Data Processing
-            3 Put detection into Queue`"]
+            desc2["`1 Collect image
+            2 Data processing
+            3 Put detection into queue`"]
         end
         Queue[["MP Queue"]]
-        subgraph trackProc["`**Object_tracking.py**`"]
+        subgraph trackProc["`**ObjectTracking.py**`"]
             style desc3 text-align:left
-            desc3["`1 Collect Image
-            2 Data Processing
-            3 Put detection into Queue`"]
+            desc3["`1 Read data from queue
+            2 Update tracks based of new data
+            3 Report current tracks`"]
         end
     end
-    Radar["fa:fa-satellite-dish"]:::bigNode
-    Video["fa:fa-camera"]:::bigNode
+    Radar[["Radar"]]:::bigNode
+    Video[[Video]]:::bigNode
 
     Radar <--> radarProc
     Video <--> imageProc

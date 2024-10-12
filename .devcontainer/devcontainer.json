@@ -3,7 +3,10 @@
 {
 	"name": "Radar, Video Tracking",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "ultralytics/ultralytics:latest",
+	"build": { 
+		"dockerfile": "Dockerfile",
+		"context": "."
+	},
 	"runArgs": [
 		"--gpus=all",
 		 "--ipc=host",
@@ -18,7 +21,7 @@
 		// "--device=/dev/video0:/dev/video0"
 	],
 	"remoteEnv": {
-		"DISPLAY": "${localEnv:DISPLAY}",
+		"DISPLAY": "${localEnv:DISPLAY}"
 		// "PATH": "${containerEnv:PATH}:/usr/local/cuda/bin",
 		// "LD_LIBRARY_PATH": "$LD_LIBRARY_PATH:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64",
 		// "XLA_FLAGS": "--xla_gpu_cuda_data_dir=/usr/local/cuda"
@@ -41,7 +44,7 @@
 	"mounts": [
 	],
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "pip install -r requirements.txt && nvidia-smi",
+	"postCreateCommand": "nvidia-smi",
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	"remoteUser": "root"
 }
