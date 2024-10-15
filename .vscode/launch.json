@@ -17,7 +17,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
-            "args": "--video-source /data/video/M0101.mp4 --skip-radar",
+            "args": "--video-source /data/video/M0101.mp4 --skip-radar --show-tracking-plot",
             "console": "integratedTerminal"
         },
         {
@@ -25,7 +25,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
-            "args": "--video-config /configuration/VideoConfig_AnkerCamera.yaml --skip-radar --view-img",
+            "args": "--video-config /configuration/VideoConfig_AnkerCamera.yaml --skip-radar --view-img --show-tracking-plot",
             "console": "integratedTerminal"
         },
         {
@@ -33,7 +33,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
-            "args": " --skip-video --skip-tracking",
+            "args": " --skip-video --skip-tracking --show-tracking-plot",
             "console": "integratedTerminal"
         },
         {
@@ -41,7 +41,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
-            "args": "--skip-video --skip-tracking --radar-from-file --radar-source /data/radar/run2-TD",
+            "args": "--skip-video --radar-from-file --radar-source /data/radar/run2-TD --show-tracking-plot",
             "console": "integratedTerminal"
         },
         {
