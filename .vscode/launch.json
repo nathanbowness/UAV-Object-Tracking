@@ -41,7 +41,15 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
-            "args": "--skip-video --radar-from-file --radar-source /data/radar/run2-TD --show-tracking-plot",
+            "args": "--skip-video --radar-from-file --radar-source /data/radar/run2-TD --show-tracking-plot --batching-time 0.1",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Tracking: Video, Radar, From Prerecorded Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tracking.py",
+            "args": "--show-live-video --radar-from-file --radar-source /data/radar/run2-TD --show-tracking-plot --batching-time 0.1",
             "console": "integratedTerminal"
         },
         {

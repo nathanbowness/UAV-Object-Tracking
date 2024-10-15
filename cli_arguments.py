@@ -35,13 +35,13 @@ def define_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument('--model-weights', type=str, default=None, help='model weights path. yolo wil attempt to download the weight if the arg is not a path')
     parser.add_argument('--video-source', type=str, default=None, help='source of the video data, supports all yolo default options')
     parser.add_argument('--disable-save-video', action='store_true', help='disable saving the video data')
-    parser.add_argument('--show-video-live ', action='store_true', help='if the live video feed should be shown, this requires a display')
+    parser.add_argument('--show-live-video', action='store_true', help='if the live video feed should be shown, this requires a display')
     
     # Options for the tracking configuration
     parser.add_argument('--tracking-config', type=str, default='/configuration/TrackingConfig.yaml', help='tracking configuration file path')
     parser.add_argument('--show-tracking-plot', action='store_true', help='show the tracking plot on completion')
     parser.add_argument('--tracking-disable-save', action='store_true', help='disable saving the tracking data')
-    
+    parser.add_argument('--batching-time', type=float, default=0.3, help='time to accumulate detections before sending to tracking algorithm')
     return parser
     
 def update_radar_config(config:RadarConfiguration, args:argparse.Namespace) -> RadarConfiguration:
@@ -77,7 +77,7 @@ def update_video_config(config:VideoConfiguration, args:argparse.Namespace) -> V
         config.videoSource = args.video_source
     if args.disable_save_video:
         config.saveProcessedVideo = False
-    if args.show_video_live:
+    if args.show_live_video:
         config.showVideo = True
     
     return config

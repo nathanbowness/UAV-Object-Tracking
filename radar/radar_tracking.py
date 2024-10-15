@@ -109,11 +109,11 @@ class RadarTracking():
         
         time.sleep(0.2) # Simulate the processing time
         
-        self.send_object_tracks_to_queue() # Send the object tracks to the queue -- TODO, put after the check below
-        
         # Until we have enough records for CFAR or analysis, just continue 
         if(len(self.radar_window.get_raw_records()) < self.radar_window.required_cells_cfar):
             return
+        
+        self.send_object_tracks_to_queue() # Send the object tracks to the queue
         
         # Handle the object tracking, and send the data to the radar queue
         # self.handle_object_tracking()
