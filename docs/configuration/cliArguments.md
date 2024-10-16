@@ -31,11 +31,11 @@ A full list can be seen by running `python3 tracking.py --help` from an environm
 --model-weights         #model weights path. yolo wil attempt to download the weight if the arg is not a path
 --video-source          #source of the video data, supports all yolo default options
 --disable-save-video    #disable saving the video data
---show-video-live       # if a live-feed of the video should be shown while running 
+--show-live-video       # if a live-feed of the video should be shown while running 
 
 # Options for the tracking configuration
 --tracking-config       # tracking configuration file path, DEFAULT - /configuration/TrackingConfig.yaml
 --show-tracking-plot    # show the tracking plot on completion
 --tracking-disable-save # disable saving the tracking data
-
+--batching-time         # time to accumulate detections before sending to tracking algorithm - default 0.3 seconds
 ```

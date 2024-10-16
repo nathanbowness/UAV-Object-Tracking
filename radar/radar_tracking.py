@@ -1,11 +1,15 @@
 import os
 import sys
+from typing import List
 import pandas as pd
 import numpy as np
+from datetime import datetime
 
 import multiprocessing as mp
 import time
 
+from constants import RADAR_DETECTION_TYPE
+from tracking.DetectionsAtTime import DetectionDetails, DetectionsAtTime
 from radar.cfar import get_range_bin_for_indexs
 from radar.configuration.RunType import RunType
 
@@ -63,9 +67,6 @@ class RadarTracking():
         else:
             print("Running radar tracking on live data. Not recording results.")
             
-        # TODO - Print a single file will all the run configuration settings.
-        
-        
         while not stop_event.is_set():
             voltage_data = get_td_data_voltage(self.radar_module)
             if voltage_data is None:
@@ -107,9 +108,12 @@ class RadarTracking():
         # self.radar_window.calculate_detections(record_timestamp=td_data.timestamp)
         
         time.sleep(0.2) # Simulate the processing time
+        
         # Until we have enough records for CFAR or analysis, just continue 
         if(len(self.radar_window.get_raw_records()) < self.radar_window.required_cells_cfar):
             return
+        
+        self.send_object_tracks_to_queue() # Send the object tracks to the queue
         
         # Handle the object tracking, and send the data to the radar queue
         # self.handle_object_tracking()
@@ -165,8 +169,32 @@ class RadarTracking():
                 
                 plot_data_velo = {'type': 'velocity', 'relativeTimeSec': new_time, 'data': self.radar_window.velocity_records[-1][:,1]}
                 self.plot_data_queue.put(plot_data_velo)
-
+            
+    def send_object_tracks_to_queue(self):
+        """
+        Pull the latest detection information from the radar window.
+        Push the detections to the Queue
+        """
+        # Detection that should be sent to the queue
+        detectionTimestamp = datetime.now().replace(microsecond=0)
+        detections = []
+    
+        x_vx_y_vy = [1, 0.1, 1, 0.1]
+        details = DetectionDetails(obj_type="unknown", detection_data=x_vx_y_vy)
+        detections.append(details)
+        
+        detectionAtTime = DetectionsAtTime(timestamp = detectionTimestamp,
+                                           data_type = RADAR_DETECTION_TYPE, 
+                                           detections= detections)
+        
+        if self.radar_data_queue is not None and len(detections) > 0:
+            self.radar_data_queue.put(detectionAtTime)   
+    
     def handle_object_tracking(self):
+        """
+        DEPRECATED Object handling - here for history purposes.
+        """
+        
         latest_detection_data = self.radar_window.detection_records[-1] # (512, 8)
         raw_records = self.radar_window.raw_records[-1] # (513, 8)
         timestamp = self.radar_window.timestamps[-1]

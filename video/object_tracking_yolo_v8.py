@@ -39,7 +39,7 @@ def setup_output_folders(output_directory : str, save_raw_img : bool = True, sta
     
     return output_folder
             
-def detection_from_bbox(yolo_box, detected_object, camera_details : CameraDetails, print_details=False):
+def detection_from_bbox(yolo_box, detected_object, camera_details : CameraDetails, print_details=False) -> DetectionDetails:
     """
     Calculate the object location and size from the bounding box coordinates.
     

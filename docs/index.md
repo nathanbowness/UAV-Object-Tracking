@@ -56,3 +56,48 @@ flowchart LR
     Queue -- Data read from Queue --> trackProc
 ```
 
+
+## Algorithm for Data Processing
+The system processes data from both radar and video sensors, each sending data to their respective queues: the radar processing queue and the image processing queue. Data from both sensors can arrive at different rates, so a batching mechanism with a 0.3-second window is used to synchronize them.
+
+Every 0.3 seconds, all available data is retrieved from both queues. This window is chosen because it ensures that both radar and video processing have completed at least once in that period. If both radar and video data are available within the same batch, they are combined and used for tracking. If only one is available, it is used alone.
+
+When multiple detections are present within the 0.3-second window, the latest detection is used for tracking. Future improvements will allow either taking an average of the detections or selecting the detection with the highest confidence score for better tracking accuracy.
+
+As performance improves, the batching window can be adjusted to handle data more frequently while maintaining synchronization between the radar and video data.
+
+
+```mermaid
+graph TD
+    subgraph Image Process
+        A1(Video Data Capture)
+        A1 -->|Sends to| Q1[image_data_queue]
+    end
+
+    subgraph Radar Process
+        B1(Radar Data Capture)
+        B1 -->|Sends to| Q2[radar_data_queue]
+    end
+
+    subgraph Main Processing Loop
+        Q1 -->|Pulls Data| P1[Check image_data_queue]
+        Q2 -->|Pulls Data| P2[Check radar_data_queue]
+        
+        P1 -->|Check timestamps within 0.3s| D1(Within 0.3s?)
+        P2 -->|Check timestamps within 0.3s| D2(Within 0.3s?)
+        
+        D1 -->|Yes| I1[Process Image Data]
+        D2 -->|Yes| R1[Process Radar Data]
+        
+        D1 -->|No| I2[Buffer Image Data for Next Loop]
+        D2 -->|No| R2[Buffer Radar Data for Next Loop]
+        
+        I1 --> M1[Process Detections, Indivually or Concatenated]
+        R1 --> M1
+
+        M1 -->|Pass Detections| T1[Update Current Tracks]
+        
+        I2 -->|Use buffered data in next loop| P1
+        R2 -->|Use buffered data in next loop| P2
+    end
+```

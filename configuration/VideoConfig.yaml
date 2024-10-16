@@ -17,7 +17,7 @@ showVideo: False
 printDetectedObjects: False # Print the detected objects in the console as noticed
 
 # Camera Details
-cameraHorizontalFOV: 170
+cameraHorizontalFOV: 120
 cameraZoomFactor: 1.0
-imageWidth: 640
-imageHeight: 352
+imageWidth: 1920
+imageHeight: 1080

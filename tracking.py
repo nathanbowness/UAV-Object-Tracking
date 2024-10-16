@@ -1,15 +1,9 @@
-import numpy as np
 import multiprocessing as mp
 import time
 import torch
+import pandas as pd
 
-# from plots.PlotRadarFrequencyHeatMapDynamic import PlotRadarFrequencyHeatMapDynamic
-# from plots.PlotDetectionsDynamic import PlotDetectionsDynamic
-# from plots.PlotPolarDynamic import PlotPolarDynamic
-# import matplotlib
-# matplotlib.use('Qt5Agg') # Required for GUI support on linux
-# import matplotlib.pyplot as plt
-# plt.ion()  # Enable interactive mode
+from datetime import datetime, timedelta
 
 from video.VideoConfiguration import VideoConfiguration
 from tracking.TrackingConfiguration import TrackingConfiguration
@@ -22,132 +16,137 @@ from radar.configuration.RadarConfiguration import RadarConfiguration
 from radar.radar_tracking import RadarTracking
 from video.object_tracking_yolo_v8 import track_objects
 
-import pandas as pd
-
 def radar_tracking_task(stop_event, config: RadarConfiguration, start_time: pd.Timestamp, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
     radar_tracking = RadarTracking(config, start_time, radar_data_queue, plot_data_queue)
     radar_tracking.object_tracking(stop_event)
-    time.sleep(0.1)  # Add a delay to avoid busy-waiting
         
-def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, plot_data_queue = None):
+from collections import deque
+from datetime import datetime, timedelta
+import time
+
+import multiprocessing as mp
+import queue
+from datetime import datetime, timedelta
+
+def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, batching_time=0.3, plot_data_queue=None):
     
     count = 1
-    while not stop_event.is_set():
-        # Handle image data queue
-        while image_data_queue is not None and not image_data_queue.empty():
-            try:
-                detectionsAtTime = image_data_queue.get(timeout=1)  # Add timeout to avoid blocking
-                timestamp = detectionsAtTime.timestamp
-                detections = detectionsAtTime.detections
-                dataType = detectionsAtTime.type
-                
-                tracker.update_tracks(detections, timestamp, type=dataType)
-                count += 1
-                
-                if count % 25 == 0:
-                    tracker.print_current_tracks(remove_tracks=False, interval=2)
-            except mp.queues.Empty:
-                pass
+    time_window = timedelta(seconds=batching_time)  # Define the window
+    max_wait_time = 0.15  # Wax wait time to check data in the queue
 
-        # Handle radar data queue
-        while radar_data_queue is not None and not radar_data_queue.empty():
-            try:
-                detections_raw = radar_data_queue.get(timeout=1)  # Add timeout to avoid blocking
-                # print(f"Received radar data: {detections_raw}")
-                
-                if (detections_raw == "DONE"):
-                    print("Radar data processing is done.")
-                    tracker.show_tracks_plot()
+    last_batch_time = None
+
+    # Buffers to store data for the next processing loop
+    image_buffer = []
+    radar_buffer = []
+
+    while not stop_event.is_set():
+        processed_anything = False
+        image_detections_in_window = []
+        radar_detections_in_window = []
+
+        # Define a batch time window for collecting data
+        if last_batch_time is None:
+            last_batch_time = datetime.now()
+
+        current_time = datetime.now()
+        batch_window_end = last_batch_time + time_window  # Set the upper limit for the current batch window
+
+        # Fetch all image data within the 0.3-second window
+        try:
+            # Process buffered image data from the previous loop
+            for detectionsAtTime in image_buffer:
+                image_timestamp = detectionsAtTime.timestamp
+                if image_timestamp <= batch_window_end:
+                    image_detections_in_window.append(detectionsAtTime)
+                else:
+                    # Keep the data for the next loop
                     break
+
+            image_buffer = [d for d in image_buffer if d.timestamp > batch_window_end]
+
+            # Process new data from the queue
+            while image_data_queue is not None and not image_data_queue.empty():
+                detectionsAtTime = image_data_queue.get(timeout=max_wait_time)
+                image_timestamp = detectionsAtTime.timestamp
                 
-                # Extract the array data and time from the detections dictionary
-                array_data = detections_raw['data']
-                timestamp = detections_raw['time']
+                if image_timestamp <= batch_window_end:
+                    image_detections_in_window.append(detectionsAtTime)
+                else:
+                    # Buffer data for the next loop
+                    image_buffer.append(detectionsAtTime)
+                    break
+
+        except queue.Empty:
+            pass
+
+        # Fetch all radar data within the 0.3-second window
+        try:
+            # Process buffered radar data from the previous loop
+            for detectionsAtTime in radar_buffer:
+                radar_timestamp = detectionsAtTime.timestamp
+                if radar_timestamp <= batch_window_end:
+                    radar_detections_in_window.append(detectionsAtTime)
+                else:
+                    # Keep the data for the next loop
+                    break
+
+            radar_buffer = [d for d in radar_buffer if d.timestamp > batch_window_end]
+
+            # Process new data from the queue
+            while radar_data_queue is not None and not radar_data_queue.empty():
+                detectionsAtTime = radar_data_queue.get(timeout=max_wait_time)
+                radar_timestamp = detectionsAtTime.timestamp
                 
-                # Convert array_data to a numpy array
-                detection_array = np.array([[float(d['x']), float(d['x_v']), float(d['y']), float(d['y_v'])] for d in array_data])
-                
-                # Convert time_str to datetime object using the provided format                  
-                # timestamp = datetime.strptime(time_str, '%Y-%m-%d %H-%M-%S')
-                
-                tracker.update_tracks(detection_array, timestamp) # remove tracks older than 1 second for now
-                
-                # if (len(tracking.timesteps) % 50 == 0):
-                #     tracking.show_tracks_plot()
-                count += 1
-                
-            except mp.queues.Empty:
-                pass
-            except Exception as e:
-                print(f"Error processing radar data: {e}")
-                pass
-    
+                if radar_timestamp <= batch_window_end:
+                    radar_detections_in_window.append(detectionsAtTime)
+                else:
+                    # Buffer data for the next loop
+                    radar_buffer.append(detectionsAtTime)
+                    break
+
+        except queue.Empty:
+            pass
+
+        # Process both image and radar data if available within the time window
+        if image_detections_in_window and radar_detections_in_window:
+            combined_timestamp = max(
+                image_detections_in_window[-1].timestamp, radar_detections_in_window[-1].timestamp
+            )
+            combined_detections = (
+                image_detections_in_window[-1].detections + radar_detections_in_window[-1].detections
+            )
+            tracker.update_tracks(combined_detections, combined_timestamp, type="combined")
+            
+        elif image_detections_in_window:
+            image_timestamp = image_detections_in_window[-1].timestamp
+            image_detections = image_detections_in_window[-1].detections
+            tracker.update_tracks(image_detections, image_timestamp, type="image_only")
+
+        elif radar_detections_in_window:
+            radar_timestamp = radar_detections_in_window[-1].timestamp
+            radar_detections = radar_detections_in_window[-1].detections
+            tracker.update_tracks(radar_detections, radar_timestamp, type="radar_only")
+        else:
+            last_batch_time = current_time  # Set the start of the next batch window
+            
+            time.sleep(0.01) # Small sleep to avoid busy waiting
+            continue
+        
+        count += 1
+        last_batch_time = current_time  # Set the start of the next batch window
+        if count % 25 == 0:
+            tracker.print_current_tracks(remove_tracks=False, interval=2)
+
     tracker.show_tracks_plot()
     tracker.print_current_tracks(remove_tracks=True, interval=1)
             
 def plot_data(plot_queue: mp.Queue, stop_event):
-    # import matplotlib
-    # matplotlib.use('Qt5Agg')  # Use TkAgg backend for GUI support
-    # import matplotlib.pyplot as plt
-    # plt.ion()  # Enable interactive mode
-    # max_distance_plotted = 60
-    
-    # polarPlot = PlotPolarDynamic(min_angle=-90, max_angle=90, max_distance=40, interval=50)
-    # detectionsPlot = PlotDetectionsDynamic(num_plots=2, plot_titles=["Rx1 Detections", "Rx2 Detections"], interval=50, max_bins=512)
-    # heatMapPlot = PlotRadarFrequencyHeatMapDynamic(title="Raw FD Data Heatmap", range_bin_size=0.199861, min_distance=5, max_distance=max_distance_plotted)
-    
-    # heatMapPlotFreq = PlotRadarFrequencyHeatMapDynamic(title="MicroDop Freq", range_bin_size=0.199861, min_limit=0, max_limit=0.5, min_distance=5, max_distance=max_distance_plotted)
-    # heatMapPlotVelocity = PlotRadarFrequencyHeatMapDynamic(title="Velocity", range_bin_size=0.199861, min_limit=-2, max_limit=1, min_distance=5, max_distance=max_distance_plotted)
-    
-    # plt.show(block=False)  # Show the plot window without blocking
-    # plt.pause(0.1)
-    # count = 0
-
     while not stop_event.is_set():
         while plot_queue is not None and not plot_queue.empty():
             try:                
                 plot_data = plot_queue.get(timeout=1)
-                # if (plot_data["type"] == "detections"):
-                #     detections_data = plot_data["data"]
-                #     detectionsPlot.update_data([detections_data["Rx1"], detections_data["Rx2"]])
-                    
-                # elif (plot_data["type"] == "polar"):
-                #     distances, angles = plot_data["dist"], plot_data["angles"]
-                #     # polarPlot.update_data(distances, angles, clear=True)
-                    
-                # elif (plot_data["type"] == "magnitude"):
-                #     magnitude_data = plot_data["data"]
-                #     time = plot_data["relativeTimeSec"]
-                #     heatMapPlot.update_data(time, magnitude_data)
-                    
-                # elif (plot_data["type"] == "microFreq"):
-                #     magnitude_data = plot_data["data"]
-                #     time = plot_data["relativeTimeSec"]
-                #     heatMapPlotFreq.update_data(time, magnitude_data)
-                    
-                # elif (plot_data["type"] == "velocity"):
-                #     magnitude_data = plot_data["data"]
-                #     time = plot_data["relativeTimeSec"]
-                #     heatMapPlotVelocity.update_data(time, magnitude_data)
-                    
-                plt.pause(0.1)
-                
-                if count % 20 == 0:
-                    print(f"Plotting data")
-                
-                count += 1
-                    
-                # distances, angles = plot_data["dist"], plot_data["angles"]
-                # polarPlot.update_data(distances, angles, clear=True)
-                # plt.pause(0.1)
-                
-                # Convert the angles to radians, so we can then get the x, y coordinates
-                # angles_in_radians = np.radians(angles)
-                # x_coord_detections = distances * np.cos(angles_in_radians)
-                # y_coord_detections = distances * np.sin(angles_in_radians)
-                # x_vel = np.full(x_coord_detections.shape, 1)
-                # y_vel = np.full(y_coord_detections.shape, 1)
-                
+                # For now, do nothing. 
             except mp.queues.Empty:
                 pass
 
@@ -186,17 +185,17 @@ if __name__ == '__main__':
         radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, radar_config, start_time, radar_data_queue, plot_data_queue))
         radar_proc.start()
       
-    # Create the object tracking configuration, process, queue to move data      
+    # Create the object tracking configuration, process, queue to move data
     if not args.skip_tracking:
         tracking_config = TrackingConfiguration()
         tracking_config = update_tracking_config(tracking_config, args) # Update the video configuration with the command line arguments
         tracker = get_object_tracking_gm_phd(start_time, tracking_config)
         
         # Queue process to handle incoming data
-        tracking_proc = mp.Process(name="Tracking", target=process_queues, args=(stop_event, tracker, image_data_queue, radar_data_queue, plot_data_queue))
+        tracking_proc = mp.Process(name="Tracking", target=process_queues, args=(stop_event, tracker, image_data_queue, radar_data_queue, args.batching_time, plot_data_queue))
         tracking_proc.start()
         
-    # plotting process
+    # plotting process - remove for now, provided little value
     # if args.enable_plot:
         
     #     plot_data_queue = mp.Queue()
@@ -204,7 +203,7 @@ if __name__ == '__main__':
     
     try:
         while True:
-            user_input = input("Type 'q' and hit ENTER to quit: ")
+            user_input = input("Type 'q' and hit ENTER to quit:\n")
             if user_input.lower() == 'q':
                 stop_event.set()
                 break
