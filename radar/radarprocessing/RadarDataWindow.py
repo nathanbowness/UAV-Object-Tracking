@@ -1,7 +1,8 @@
 from collections import deque
 from radar.cfar import cfar_single, cfar_required_cells
-from radar.radarprocessing.FDDataMatrix import FDDataMatrix, FDSignalType
+from radar.radarprocessing.FDDataMatrix import FDSignalType
 from radar.configuration.CFARParams import CFARParams
+from radar.radarprocessing.TDData import TDData
 
 import numpy as np
 import pandas as pd
@@ -10,6 +11,8 @@ from datetime import timedelta
 class RadarDataWindow():
     """
     timestamps -> timestamp of when each record was recorded
+    raw_records -> np array (1024, 4) [I1, Q1, I2, Q2] (all in Volts)
+    
     raw_records -> np array (512, 7) [range_bins, I1, Q1, I2, Q2, Rx1 Phase, Rx2 Phase, View Angle]
     detection_records -> np array (512, 8) [range_bins, I1 Det, I1_Thresh, Q1 Det, Q1_Thresh, I2 Det, I2_Thresh, Q2 Det, Q2_Thresh]
     velocity_records -> np array (512, 2) [frequency, velocity]
@@ -31,6 +34,19 @@ class RadarDataWindow():
         self.index_to_eval = cfar_params.num_train + cfar_params.num_guard
         self.required_cells_cfar = cfar_required_cells(cfar_params)
 
+    def add_raw_record(self, record : TDData):
+        """
+        Add a record to the deque.
+        Ensure the deque doesn't exceed the capacity set
+        """
+        self.timestamps.append(record.timestamp.replace(microsecond=0))
+        # Calculate the difference between the current record coming in and the previous record
+        if len(self.raw_records) > 1:
+            self.diff_records.append(record.td_data - self.raw_records[-1])
+        self.raw_records.append(record.td_data)
+        
+        self.remove_old_records()
+    
     def remove_old_records(self):
         # Remove records based on capacity if capacity is specified
         if self.capacity and len(self.raw_records) == self.capacity:
@@ -45,21 +61,11 @@ class RadarDataWindow():
                 self.timestamps.popleft()
                 self.raw_records.popleft()
                 self.detection_records.popleft()
-    
-    def add_raw_record(self, record : FDDataMatrix):
-        """
-        Add a record to the deque.
-        Ensure the deque doesn't exceed the capacity set
-        """
-        self.timestamps.append(record.timestamp.replace(microsecond=0))
-        # Calculate the difference between the current record coming in and the previous record
-        if len(self.raw_records) > 1:
-            self.diff_records.append(record.fd_data - self.raw_records[-1])
-        self.raw_records.append(record.fd_data)
-        
-        self.remove_old_records()
         
         
+    # MORE TODO        
+        
+
     def calculate_detections(self, record_timestamp: pd.Timestamp):
         detection_data = self.process_new_data()
         

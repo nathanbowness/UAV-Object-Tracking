@@ -46,6 +46,7 @@ class RadarTracking():
                                             start_time=self.start_time,
                                             capacity=self.config.processing_window,
                                             run_velocity_measurements=False)
+        self.count_between_processing = 5
 
     def object_tracking(self, stop_event):
         # If this is a rerun, read the data from the folder until it's completed
@@ -102,11 +103,8 @@ class RadarTracking():
         print("Completed all processing of radar data from the folder.")
             
     def process_time_domain_data(self, td_data):
-        
-        # TODO - convert the TDData to FDDataMatrix, for processing.. Need FD for this (or do it in the RadarWindow itself)
+        # Add the raw TD record to the radar window -- TODO remove to actually process
         # self.radar_window.add_raw_record(td_data)
-        # self.radar_window.calculate_detections(record_timestamp=td_data.timestamp)
-        
         time.sleep(0.2) # Simulate the processing time
         
         # Until we have enough records for CFAR or analysis, just continue 
@@ -115,8 +113,10 @@ class RadarTracking():
         
         self.send_object_tracks_to_queue() # Send the object tracks to the queue
         
-        # Handle the object tracking, and send the data to the radar queue
-        # self.handle_object_tracking()
+        if self.count_between_processing % 5 == 100000:
+            self.radar_window.process_new_data() 
+            # TODO velocity processing?
+            print("something")
     
     def export_radar_config_to_file(self, output_dir, output_file="RadarConfigurationReport.txt"):
         """
