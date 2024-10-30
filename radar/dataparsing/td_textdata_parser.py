@@ -7,24 +7,17 @@ from datetime import datetime
 from radar.radarprocessing.TDData import TDData
 
 def extract_timestamp_from_filename(filename):
-    # Try to extract the timestamp part from the filename using regex with milliseconds
-    match = re.search(r'trial\d?_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.\d{3})', filename)
-    local_save = re.search(r'TD\d?_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.\d{3})', filename)
+    # Extract the timestamp with milliseconds from the filename
+    match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.\d{3})', filename)
     if match:
         timestamp_str = match.group(1)
         # Replace underscores with spaces to match the format
         timestamp_str = timestamp_str.replace('_', ' ')
         # Parse the timestamp string using datetime
         dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S.%f')
-    elif local_save:
-        timestamp_str = local_save.group(1)
-        # Replace underscores with spaces to match the format
-        timestamp_str = timestamp_str.replace('_', ' ')
-        # Parse the timestamp string using datetime
-        dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S.%f')
     else:
-        # Try to extract the timestamp part from the filename using regex without milliseconds
-        match = re.search(r'trial\d?_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', filename)
+        # Try to extract the timestamp without milliseconds
+        match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', filename)
         if match:
             timestamp_str = match.group(1)
             # Replace underscores with spaces to match the format
@@ -32,8 +25,8 @@ def extract_timestamp_from_filename(filename):
             # Parse the timestamp string using datetime
             dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S')
         else:
-            raise ValueError(f"Filename does not match the expected format: {filename}, ")
-    
+            raise ValueError(f"Filename does not match the expected format: {filename}")
+
     # Convert to pd.Timestamp
     timestamp = pd.Timestamp(dt)
     return timestamp
