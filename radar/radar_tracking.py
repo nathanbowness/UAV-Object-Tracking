@@ -91,32 +91,31 @@ class RadarTracking():
         files = os.listdir(directory_to_process)
         
         # Filter the files based on the naming convention, and sort them
-        txt_files = [f for f in files if f.startswith(('trial', 'TD')) and f.endswith('.txt')]
+        txt_files = [f for f in files if f.endswith('.txt')]
         txt_files.sort()
         
         # Process each file one by one
         for file_name in txt_files:
             file_path = os.path.join(directory_to_process, file_name)
             new_td_data = read_columns(file_path)
+            
+            # Simulate the timestamp as the current time to we can use the real-time windowing.
+            # Add a 0.08 second delay between processing since we expect it to take roughly that long to get the radar data
+            new_td_data.timestamp = pd.Timestamp.now()
             self.process_time_domain_data(new_td_data)
+            time.sleep(0.08)
             
         print("Completed all processing of radar data from the folder.")
             
     def process_time_domain_data(self, td_data):
-        # Add the raw TD record to the radar window -- TODO remove to actually process
-        # self.radar_window.add_raw_record(td_data)
-        time.sleep(0.2) # Simulate the processing time
+        # Add the raw TD record to the radar window
+        self.radar_window.add_raw_record(td_data)
+        # Call method to process the latest data
+        self.radar_window.process_data()
         
-        # Until we have enough records for CFAR or analysis, just continue 
-        if(len(self.radar_window.get_raw_records()) < self.radar_window.required_cells_cfar):
-            return
-        
-        self.send_object_tracks_to_queue() # Send the object tracks to the queue
-        
-        if self.count_between_processing % 5 == 100000:
-            self.radar_window.process_new_data() 
-            # TODO velocity processing?
-            print("something")
+        # detections = self.radar_window.get_most_recent_detections_split_xy()
+        detections = self.radar_window.get_most_recent_detections_combined_xy()
+        self.send_object_tracks_to_queue(detectionsAtTime=detections) # Send the object tracks to the queue
     
     def export_radar_config_to_file(self, output_dir, output_file="RadarConfigurationReport.txt"):
         """
@@ -170,67 +169,10 @@ class RadarTracking():
                 plot_data_velo = {'type': 'velocity', 'relativeTimeSec': new_time, 'data': self.radar_window.velocity_records[-1][:,1]}
                 self.plot_data_queue.put(plot_data_velo)
             
-    def send_object_tracks_to_queue(self):
+    def send_object_tracks_to_queue(self, detectionsAtTime: DetectionsAtTime):
         """
-        Pull the latest detection information from the radar window.
         Push the detections to the Queue
         """
-        # Detection that should be sent to the queue
-        detectionTimestamp = datetime.now().replace(microsecond=0)
-        detections = []
-    
-        x_vx_y_vy = [1, 0.1, 1, 0.1]
-        details = DetectionDetails(obj_type="unknown", detection_data=x_vx_y_vy)
-        detections.append(details)
-        
-        detectionAtTime = DetectionsAtTime(timestamp = detectionTimestamp,
-                                           data_type = RADAR_DETECTION_TYPE, 
-                                           detections= detections)
-        
-        if self.radar_data_queue is not None and len(detections) > 0:
-            self.radar_data_queue.put(detectionAtTime)   
-    
-    def handle_object_tracking(self):
-        """
-        DEPRECATED Object handling - here for history purposes.
-        """
-        
-        latest_detection_data = self.radar_window.detection_records[-1] # (512, 8)
-        raw_records = self.radar_window.raw_records[-1] # (513, 8)
-        timestamp = self.radar_window.timestamps[-1]
-        
-        # TODO -- ensure the algorithm, and masking for this is correct... Seems like something might be off
-        
-        detectionsRx1 = np.logical_or(latest_detection_data[:,FDSignalType.I1.value*2], latest_detection_data[:,FDSignalType.Q1.value*2]).astype(int)
-        # detectionsRx1 = latest_detection_data[:,FDSignalType.I1.value*2].astype(int)
-        detectionsRx2 = np.logical_or(latest_detection_data[:,FDSignalType.I2.value*2], latest_detection_data[:,FDSignalType.Q2.value*2]).astype(int)
-
-        # Mask any detections that have an angle of -90 or 90 -- not valid objects, or out of frame.
-        angles = raw_records[1:,FDSignalType.VIEW_ANGLE.value] # Skip the first record, since it's length 513
-        angles_mask = np.where((angles == 90) | (angles == -90))
-        detectionsRx1[angles_mask] = 0
-        detectionsRx2[angles_mask] = 0
-        
-        # Get the total detections now after the masking, and their indexes
-        detectionsTotal = np.logical_or(detectionsRx1, detectionsRx2).astype(int)
-        detectionIndexes = np.where(detectionsTotal == 1)[0]
-        
-        # Get the actual detections to plot
-        detectionsDistanceArray = get_range_bin_for_indexs(detectionIndexes, 0.199861)
-        detectionsAngleDeg = raw_records[:,FDSignalType.VIEW_ANGLE.value][detectionIndexes]
-        
-        self.add_plot_data_to_queue(timestamp, detectionsRx1, detectionsRx2, raw_records)
-        
-        if len(detectionsAngleDeg) > 0 and (len(detectionsDistanceArray) == len(detectionsAngleDeg)):
-            # Convert angles from degrees to radians
-            detectionsAngleRad = np.radians(detectionsAngleDeg)
-
-            # Calculate x and y coordinates
-            x_coords = detectionsDistanceArray * np.cos(detectionsAngleRad)
-            y_coords = detectionsDistanceArray * np.sin(detectionsAngleRad)
-            array_data = [{'x': x, 'y': y, 'x_v': '1', 'y_v':'1'} for x, y in zip(x_coords, y_coords)]
-            detections = {'time': timestamp, 'type': 'radar', 'data': array_data}
-            
-            # Send data to the radar_queue --- {'x', 'y', 'type', 'time'}
-            self.radar_data_queue.put(detections)
+        if self.radar_data_queue is not None:
+            self.radar_data_queue.put(detectionsAtTime)
     

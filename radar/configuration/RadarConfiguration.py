@@ -99,9 +99,9 @@ class RadarConfiguration:
                     # CFAR parameters
                     cfar_params = config.get('cfarParams', self.defaults['cfarParams'])
                     self.cfar_params = CFARParams(
-                        num_guard=cfar_params.get('numGuard', self.defaults['cfarParams']['numGuard']),
-                        num_train=cfar_params.get('numTrain', self.defaults['cfarParams']['numTrain']),
-                        threshold=cfar_params.get('threshold', self.defaults['cfarParams']['threshold']),
+                        num_guard=cfar_params.get('cfarNumGuard', self.defaults['cfarParams']['numGuard']),
+                        num_train=cfar_params.get('cfarNumTrainingCells', self.defaults['cfarParams']['numTrain']),
+                        threshold=cfar_params.get('cfarThreshold', self.defaults['cfarParams']['threshold']),
                     )
                     cfar_type_str = cfar_params.get('cfarType', self.defaults['cfarParams']['cfarType'])
                     self.cfar_params.cfar_type = CfarType[cfar_type_str] if cfar_type_str in CfarType.__members__ else CfarType.CASO
