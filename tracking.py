@@ -23,8 +23,8 @@ import multiprocessing as mp
 import queue
 from datetime import datetime, timedelta
 
-def radar_tracking_task(stop_event, config: RadarConfiguration, start_time: pd.Timestamp, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
-    radar_tracking = RadarTracking(config, start_time, radar_data_queue, plot_data_queue)
+def radar_tracking_task(stop_event, config: RadarConfiguration, start_time: pd.Timestamp, radar_data_queue: mp.Queue):
+    radar_tracking = RadarTracking(config, start_time, radar_data_queue)
     radar_tracking.object_tracking(stop_event)
 
 
@@ -182,13 +182,14 @@ if __name__ == '__main__':
         radar_config = update_radar_config(radar_config, args) # Update the radar configuration with the command line arguments
         
         radar_data_queue = mp.Queue()
-        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, radar_config, start_time, radar_data_queue, plot_data_queue))
+        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, radar_config, start_time, radar_data_queue))
         radar_proc.start()
       
     # Create the object tracking configuration, process, queue to move data
     if not args.skip_tracking:
         tracking_config = TrackingConfiguration()
         tracking_config = update_tracking_config(tracking_config, args) # Update the video configuration with the command line arguments
+        tracking_config.max_track_distance = radar_config.bin_size_meters * 512 # Override the max distance based on radar range
         tracker = get_object_tracking_gm_phd(start_time, tracking_config)
         
         # Queue process to handle incoming data

@@ -25,12 +25,10 @@ class RadarTracking():
     def __init__(self, 
                  radar_configuration: RadarConfiguration,
                  start_time: pd.Timestamp = pd.Timestamp.now(),
-                 radar_data_queue: mp.Queue = None, 
-                 plot_data_queue: mp.Queue = None):
+                 radar_data_queue: mp.Queue = None):
         
         self.config = radar_configuration
         self.radar_data_queue = radar_data_queue
-        self.plot_data_queue = plot_data_queue
         self.start_time = start_time
         # output directory will be the given folder, with a timestamp and 'radar' appended to it
         self.output_dir = os.path.join(self.config.output_path, self.start_time.strftime('%Y-%m-%d_%H-%M-%S'), 'radar')
@@ -44,6 +42,8 @@ class RadarTracking():
         
         self.radar_window = RadarDataWindow(cfar_params=self.config.cfar_params, 
                                             start_time=self.start_time,
+                                            bin_size=self.config.bin_size_meters,
+                                            f_c=self.config.f_c,
                                             capacity=self.config.processing_window,
                                             run_velocity_measurements=False)
         self.count_between_processing = 5
@@ -150,24 +150,6 @@ class RadarTracking():
         file_to_write = os.path.join(output_dir, output_file)
         with open(file_to_write, 'w') as file:
             file.write(report_content)
-    
-
-    def add_plot_data_to_queue(self, timestamp, detectionsRx1, detectionsRx2, raw_records):
-         # If the plot_data_queue is not None, then send the data to the queue
-        if self.plot_data_queue is not None:
-            plot_data = {'type': 'detections', 'time': timestamp, 'data': {'Rx1': detectionsRx1, 'Rx2': detectionsRx2}}
-            self.plot_data_queue.put(plot_data)
-            
-            new_time = (self.radar_window.timestamps[-1] - self.radar_window.creation_time).total_seconds()
-            plot_data = {'type': 'magnitude', 'relativeTimeSec': new_time, 'data': raw_records[1:,FDSignalType.I1.value]}
-            self.plot_data_queue.put(plot_data)
-            
-            if self.radar_run_params.run_velocity_measurements:
-                plot_data_micro = {'type': 'microFreq', 'relativeTimeSec': new_time, 'data': self.radar_window.velocity_records[-1][:,0]}
-                self.plot_data_queue.put(plot_data_micro)
-                
-                plot_data_velo = {'type': 'velocity', 'relativeTimeSec': new_time, 'data': self.radar_window.velocity_records[-1][:,1]}
-                self.plot_data_queue.put(plot_data_velo)
             
     def send_object_tracks_to_queue(self, detectionsAtTime: DetectionsAtTime):
         """
