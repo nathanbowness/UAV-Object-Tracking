@@ -31,6 +31,8 @@ def radar_tracking_task(stop_event, config: RadarConfiguration, start_time: pd.T
 def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, batching_time=0.2):
     
     count = 1
+    last_print_time = datetime.now()
+    last_remove_tracks_time = datetime.now()
     time_window = timedelta(seconds=batching_time)  # Define the window
     max_wait_time = 0.14  # Wax wait time to check data in the queue (just less than half the batching time)
 
@@ -49,7 +51,6 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, batc
         if last_batch_time is None:
             last_batch_time = datetime.now()
 
-        current_time = datetime.now()
         batch_window_end = last_batch_time + time_window  # Set the upper limit for the current batch window
 
         # Fetch all image data within the batch window
@@ -128,15 +129,27 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, batc
             radar_detections = radar_detections_in_window[-1].detections
             tracker.update_tracks(radar_detections, radar_timestamp, type="radar_only")
         else:
-            last_batch_time = current_time  # Set the start of the next batch window
+            last_batch_time = datetime.now()  # Set the start of the next batch window
             
             time.sleep(0.01) # Small sleep to avoid busy waiting
             continue
         
         count += 1
+        current_time = datetime.now()
         last_batch_time = current_time  # Set the start of the next batch window
-        if count % (5 / batching_time) == 0: # Every approx 5 seconds, print the current tracks
-            tracker.print_current_tracks(remove_tracks=False, interval=batching_time*2)
+        # Print current tracks approx every 5 seconds
+        if (current_time - last_print_time).total_seconds() >= 5:
+            
+            remove = False
+            interval = batching_time*2
+            # Print current tracks with remove_tracks=True every 30 seconds, this will remove tracks that are not being updated
+            if (current_time - last_remove_tracks_time).total_seconds() >= 30:
+                remove = True
+                interval = batching_time*10
+                last_remove_tracks_time = current_time
+
+            tracker.print_current_tracks(remove_tracks=remove, interval=interval)
+            last_print_time = current_time
 
     tracker.show_tracks_plot()
     tracker.print_current_tracks(remove_tracks=True, interval=batching_time*2)
