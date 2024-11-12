@@ -134,20 +134,21 @@ class RadarDataWindow():
         """
         phase_diff_1 = np.angle(I1_fft * np.conj(I2_fft))
         # Option: we could use the average of the two phase differences
-        # phase_diff_2 = np.angle(Q1_fft * np.conj(Q2_fft))
-        # phase_diff = (phase_diff_1 + phase_diff_2) / 2
-        sin_arg = (phase_diff_1 * SPEED_LIGHT) / (2 * np.pi * DIST_BETWEEN_ANTENNAS * self.f_c)
+        phase_diff_2 = np.angle(Q1_fft * np.conj(Q2_fft))
+        phase_diff = (phase_diff_1 + phase_diff_2) / 2
+        sin_arg = (phase_diff * SPEED_LIGHT) / (2 * np.pi * DIST_BETWEEN_ANTENNAS * self.f_c)
         sin_arg = np.clip(sin_arg, -1, 1)  # Clip values to the valid range for arcsin
         angles = np.degrees(np.arcsin(sin_arg))
         return np.clip(angles, -90, 90)
     
-    def get_most_recent_detections_split_xy(self) -> DetectionsAtTime:
+    def get_detections_split_xy(self, index = -1) -> DetectionsAtTime:
         """
-        Determine the most recent detections at the certain time
+        Determine the most recent detections at the certain time.
+        By default returns the most recent detections, but an index can be specified to return detections at a different time.
         """
         detections = []
         timestamps = self.timestamps[-1]
-        _, _, cfar_detection_Rx1, angles, _, _, cfar_detection_Rx2, _ = self.detection_records[-1].T
+        _, _, cfar_detection_Rx1, angles, _, _, cfar_detection_Rx2, _ = self.detection_records[index].T
         
         # Calculate detected distances and angles for Rx1
         rx1_indexes_with_detections = np.where(cfar_detection_Rx1)[0]
@@ -174,13 +175,14 @@ class RadarDataWindow():
         
         return DetectionsAtTime(timestamps, RADAR_DETECTION_TYPE, detections)
     
-    def get_most_recent_detections_combined_xy(self) -> DetectionsAtTime:
+    def get_detections_combined_xy(self, index = -1) -> DetectionsAtTime:
         """
         Determine the most recent detections at the certain time
+        By default returns the most recent detections, but an index can be specified to return detections at a different time.
         """
         detections = []
         timestamps = self.timestamps[-1]
-        _, _, cfar_detection_Rx1, angles, _, _, cfar_detection_Rx2, _ = self.detection_records[-1].T
+        _, _, cfar_detection_Rx1, angles, _, _, cfar_detection_Rx2, _ = self.detection_records[index].T
         
         # Ensure the CFAR detection arrays are boolean
         cfar_detection_Rx1 = cfar_detection_Rx1.astype(bool)

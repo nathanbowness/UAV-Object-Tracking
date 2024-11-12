@@ -80,7 +80,7 @@ class RadarConfiguration:
         return 3e8 / (2 * (self.maximum_frequency_mhz - self.minimum_frequency_mhz) * 1e6)
     
     def calc_center_frequency(self):
-        return (self.minimum_frequency_mhz + self.maximum_frequency_mhz) / 2
+        return ((self.minimum_frequency_mhz + self.maximum_frequency_mhz) * 1e6) / 2
 
     def load_config(self):
         """

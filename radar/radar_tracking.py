@@ -114,7 +114,7 @@ class RadarTracking():
         self.radar_window.process_data()
         
         # detections = self.radar_window.get_most_recent_detections_split_xy()
-        detections = self.radar_window.get_most_recent_detections_combined_xy()
+        detections = self.radar_window.get_detections_combined_xy()
         self.send_object_tracks_to_queue(detectionsAtTime=detections) # Send the object tracks to the queue
     
     def export_radar_config_to_file(self, output_dir, output_file="RadarConfigurationReport.txt"):
