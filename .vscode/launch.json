@@ -41,7 +41,10 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
-            "args": "--skip-video --radar-from-file --radar-source /data/radar/run2-TD --show-tracking-plot --batching-time 0.1",
+            // "args": "--skip-video --radar-from-file --radar-source \"/data/radar/Oct17/2024-10-18_10-13-20.561 20m/TD\" --show-tracking-plot --batching-time 0.1",
+            // "args": "--skip-video --radar-from-file --radar-source \"/data/radar/Oct17/2024-10-18_10-10-43.904 29m/TD\" --batching-time 0.1",
+            // "args": "--skip-video --radar-from-file --radar-source \"/data/radar/Oct17/2024-10-17_11-48-23.791/TD\" --show-tracking-plot --batching-time 0.1",
+            "args": "--skip-video --radar-from-file --radar-source \"/data/radar/Oct17/2024-10-17_15-59-35.092/TD\" --show-tracking-plot --batching-time 0.3",
             "console": "integratedTerminal"
         },
         {
@@ -49,7 +52,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/tracking.py",
-            "args": "--show-live-video --radar-from-file --radar-source /data/radar/run2-TD --show-tracking-plot --batching-time 0.1",
+            "args": "--show-live-video --radar-from-file --radar-source \"/data/radar/Oct17/2024-10-17_15-59-35.092/TD\" --show-tracking-plot --batching-time 0.2",
             "console": "integratedTerminal"
         },
         {

@@ -15,9 +15,13 @@ ethernetParams:
 
 # Radar signal processing configuration
 cfarParams:
-  cfarNumGuard: 5
+  cfarNumGuard: 4
   cfarNumTrainingCells: 10
-  cfarThreshold: 10
+  cfarThreshold: 4
+
+  # cfarNumGuard: 2
+  # cfarNumTrainingCells: 5
+  # cfarThreshold: 4
   cfarType: "CASO" # Options are CASO, LEADING_EDGE
 
 # Run configuration

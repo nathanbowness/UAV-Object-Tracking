@@ -1,4 +1,5 @@
 from concurrent.futures import thread
+import os
 from typing import List
 import numpy as np
 
@@ -72,7 +73,10 @@ def get_object_tracking_gm_phd(start_time, tracking_config: TrackingConfiguratio
         merge_threshold=tracking_config.mergeThreshold,
         prune_threshold=tracking_config.pruneThreshold,
         state_threshold=tracking_config.stateThreshold,
-        show_plot=tracking_config.showTrackingPlot
+        show_plot=tracking_config.showTrackingPlot,
+        # Saving tracking results
+        saveTrackingResults=tracking_config.saveTrackingResults,
+        outputDirectory=tracking_config.outputDirectory
     )
 
 
@@ -85,9 +89,9 @@ class ObjectTrackingGmPhd():
                  min_detections_to_cluster: int = 1, 
                  cluster_distance: int = 2, 
                  track_tail_length : float = 0.001,
-                 tracking_meas_area : int =  200,
+                 tracking_meas_area : int =  150,
                  max_deque_size: int = 200,
-                 birth_covar: int = 200,
+                 birth_covar: int = 150,
                  expected_velocity: float=1,
                  noise_covar: list = [1, 1],
                  default_cov: list = [1, 0.3, 1, 0.3],
@@ -95,9 +99,11 @@ class ObjectTrackingGmPhd():
                  death_probability: float = 0.01,
                  clutter_rate: float = 7.0,
                  merge_threshold: float = 5, # Threshold Squared Mahalanobis distance
-                    prune_threshold: float = 1E-8, # Threshold component weight
-                    state_threshold: float = 0.25,
-                    show_plot: bool = False
+                 prune_threshold: float = 1E-8, # Threshold component weight
+                 state_threshold: float = 0.25,
+                 show_plot: bool = False,
+                 saveTrackingResults: bool = False,
+                 outputDirectory: str = "/output"
                  ):
     
         self.start_time = start_time
@@ -159,6 +165,15 @@ class ObjectTrackingGmPhd():
         self.tracks_by_time = deque(maxlen=max_deque_size)
         self.tracker_count = 0
         
+        self.saveTrackingResults = saveTrackingResults
+        self.save_dir = None
+        
+        # Create folder to save data if "saveTrackingResults" is set to True
+        if self.saveTrackingResults:
+            self.save_dir = os.path.join(outputDirectory, start_time.strftime('%Y-%m-%d_%H-%M-%S'), 'tracking')
+            os.makedirs(self.save_dir, exist_ok=True)
+        
+        
     def cluster_measurements(self, detections, eps, min_samples):
         # Extract measurements (x, y) from detections
         measurements = np.array([[detection.data[0], detection.data[2]] for detection in detections])
@@ -172,6 +187,26 @@ class ObjectTrackingGmPhd():
                             for label in set(labels) if label != -1])
 
         return centroids
+    
+    def cluster_measurements_only_on_x(self, detections, eps, min_samples):
+        # Extract measurements (x, y) from detections
+        measurements = np.array([[detection.data[0], detection.data[2]] for detection in detections])
+        x_values = measurements[:, 0]  # Extract x values
+
+        # Cluster only on the x values using DBSCAN
+        clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(x_values.reshape(-1, 1))
+        labels = clustering.labels_
+
+        # Filter out noise points and calculate average y for each cluster
+        centroids = []
+        for label in set(labels):
+            if label != -1:  # Ignore noise points
+                cluster_indices = labels == label
+                cluster_x = x_values[cluster_indices].mean()  # Average x
+                cluster_y = measurements[cluster_indices, 1].mean()  # Average y
+                centroids.append([cluster_x, cluster_y])
+
+        return np.array(centroids)
         
     def update_tracks(self, detections: List[DetectionDetails], timestamp: datetime, type: str = None, print_coord: bool = False):
         """
@@ -180,10 +215,15 @@ class ObjectTrackingGmPhd():
         timestamp: timestamp of the detections
         print_coord: if True, print the coordinates of the detections added to tracks
         """
+        if (detections is None) or (len(detections) == 0):
+            return
+        
         timestamp = timestamp.replace(microsecond=0)
         
         # Get the measurements after they've been clustered
-        measurements = self.cluster_measurements(detections, self.cluster_distance, self.min_detections_to_cluster)        
+        # measurements = self.cluster_measurements(detections, self.cluster_distance, self.min_detections_to_cluster)
+        measurements = self.cluster_measurements_only_on_x(detections, self.cluster_distance, self.min_detections_to_cluster)
+         
         detection_set = set()
         # iterate over the centroids to create a new set of detection for this time instance.
         for idet in range(len(measurements)):
@@ -208,11 +248,16 @@ class ObjectTrackingGmPhd():
         
         self.birth_component.timestamp = time
         current_state.add(self.birth_component)
-
+        
         hypotheses = self.hypothesiser.hypothesise(current_state, detection_set, timestamp=time, order_by_detection=True)
-
-        updated_states = self.updater.update(hypotheses)
-        self.reduced_states = set(self.reducer.reduce(updated_states))
+        
+        try:
+            updated_states = self.updater.update(hypotheses)
+            self.reduced_states = set(self.reducer.reduce(updated_states))
+        except Exception as e:
+            print("Issue adding hypothesis: "+ e)
+            self.tracker_count += 1
+            return
 
         added_detect_to_print = []
 
@@ -264,7 +309,6 @@ class ObjectTrackingGmPhd():
             return None
     
     def show_tracks_plot(self):
-        
         # If the plot is not configured, return
         if not self.show_plot:
             return
@@ -272,16 +316,24 @@ class ObjectTrackingGmPhd():
         if (len(self.timesteps) < 5):
             return None
         
-        x_min, x_max, y_min, y_max = -self.tracking_meas_area, self.tracking_meas_area, -self.tracking_meas_area, self.tracking_meas_area
+        x_min, x_max, y_min, y_max = 0, self.tracking_meas_area, -self.tracking_meas_area, self.tracking_meas_area
         
         # Plot the tracks
-        plotter = AnimatedPlotterly(list(self.timesteps), tail_length=0.6)
+        plotter = AnimatedPlotterly(list(self.timesteps), tail_length=self.track_tail_length)
         plotter.plot_measurements(list(self.all_measurements), [0, 2], marker=dict(color='red'), measurements_label='Detections After Clustering')
         plotter.plot_tracks(list(self.tracks), [0, 2], uncertainty=True)
-        plotter.fig.update_xaxes(range=[x_min-5, x_max+5])
-        plotter.fig.update_yaxes(range=[y_min-5, y_max+5])
-        plotter.fig.show("browser")
-        print("Done plotting.")
+        plotter.fig.update_xaxes(range=[x_min, x_max])
+        plotter.fig.update_yaxes(range=[y_min, y_max])
+        
+        # Save the plot to an HTML file if a save is desired
+        if self.saveTrackingResults:
+            fileName = "tracking_plot.html"
+            plotter.fig.write_html(os.path.join(self.save_dir, fileName))
+            print("Stone soup plot saved to file.")
+        
+        if self.show_plot:
+            plotter.fig.show("browser")
+            print("Done loading plot into the browser.")
     
     def find_tracks_remove_older_tracks(self, 
                                         current_time: datetime = datetime.now(),
@@ -310,7 +362,7 @@ class ObjectTrackingGmPhd():
         return current_tracks
     
     def print_current_tracks(self, 
-                             current_time: datetime = datetime.now(), 
+                             current_time: datetime = None, 
                              remove_tracks = False,
                              interval : int = 5):
         """
@@ -319,6 +371,8 @@ class ObjectTrackingGmPhd():
         :param remove_tracks: If True, remove states from older tracks that are older than the last 'interval' seconds.
         :param interval: The time interval in seconds for filtering states.
         """
+        if current_time is None:
+            current_time = datetime.now()
         
         current_tracks = self.find_tracks_remove_older_tracks(current_time, remove_tracks=remove_tracks, interval=interval)
         print(f"There are currently {len(current_tracks)} tracks identified in the last {interval} seconds.")
@@ -333,10 +387,27 @@ class ObjectTrackingGmPhd():
             # Append the (x, y) pair to the coordinates list
             coordinates.append(x_y)
                 
-        # Create a formatted string with all coordinates on a single line
-        formatted_coords = ", ".join([f"({coord[0]:.1f}, {coord[1]:.1f})" for coord in coordinates])
-        # formatted_coords = ", ".join([f"(x: {coord[0]:.1f}, y: {coord[1]:.1f})" for coord in coordinates]) # Alternative formatting with x, y labels
-        print(f"Coordinates of current tracks: {formatted_coords}")
+       # Create a formatted string with all coordinates on a single line
+        formatted_coords = []
+        for coord in coordinates:
+            x, y = coord
+            R = np.sqrt(x**2 + y**2)
+            Theta = np.degrees(np.arctan2(y, x))
+            formatted_coords.append(f"(R: {R:.1f}, θ: {Theta:.1f}, X: {x:.1f}, Y: {y:.1f})")
+        
+        # Join the formatted coordinates into a single string
+        formatted_coords_str = ", ".join(formatted_coords)
+        
+        # Print them to a file if the option is configured
+        if self.saveTrackingResults:
+            fileName = f"tracks-{current_time.strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+            # Save the coordinates to a file
+            with open(os.path.join(self.save_dir, fileName), "a") as f:
+                f.write(f"{formatted_coords_str}\n")
+        
+        # Print the coordinates to the console for sure
+        print(f"Coordinates of current tracks at {current_time.strftime('%Y-%m-%d_%H-%M-%S')}: {formatted_coords_str}")
+        
     
 if __name__ == '__main__':
     

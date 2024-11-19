@@ -7,6 +7,14 @@ This project's goal is to create software that can be used to track objects from
 The project is **currently in progress**. 
 The best way to view the documentation for this project is to visit the [documentation's website](https://nathanbowness.github.io/UAV-Object-Tracking/). That will have the best formatting, and more information than provided here. This README contains some examples, and high level documentation/examples. 
 
+## Running Documentation Website Locally
+Run the following command from the terminal to launch a local browser with all documentation:
+```
+mkdocs serve
+```
+
+Note: If not using the provided developer container, you may need to install MKDocs with `pip install mkdocs-material`
+
 # Development and Running Locally
 Please see the [Development Environment](./docs/devEnviroment.md) Documentation for more details on running this project locally and developing.
 

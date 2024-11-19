@@ -79,7 +79,7 @@ class TrackingConfiguration:
                     self.maxTrackQueueSize = config.get('maxTrackQueueSize', self.defaults['maxTrackQueueSize'])
                     self.showTrackingPlot = config.get('showTrackingPlot', self.defaults['showTrackingPlot'])
                     self.saveTrackingResults = config.get('saveTrackingResults', self.defaults['saveTrackingResults'])
-                    self.trackingOutputPath = config.get('outputDirectory', self.defaults['outputDirectory'])
+                    self.outputDirectory = config.get('outputDirectory', self.defaults['outputDirectory'])
                     
                     # Set the active filter's settings as attributes of this instance
                     self.set_active_filter_attributes()

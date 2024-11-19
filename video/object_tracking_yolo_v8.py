@@ -125,6 +125,9 @@ def track_objects(stop_event, video_config : VideoConfiguration, start_time : pd
         # If a data_queue is provided, put the detections into the queue
         if data_queue is not None and len(detections) > 0:
             data_queue.put(DetectionsAtTime(detectionTimestamp, IMAGE_DETECTION_TYPE, detections))
+    
+        time.sleep(video_config.videoDelayBetweenProcessingSec)
+    
 
 if __name__ == "__main__":
     video_config = VideoConfiguration()

@@ -1,5 +1,6 @@
 import yaml
 import os
+from constants import SPEED_LIGHT
 from radar.configuration.CFARType import CfarType
 from radar.configuration.RunType import RunType
 from radar.configuration.CFARParams import CFARParams
@@ -72,6 +73,14 @@ class RadarConfiguration:
 
         # Load the configuration
         self.load_config()
+        self.bin_size_meters = self.calc_bin_size()
+        self.f_c = self.calc_center_frequency()
+        
+    def calc_bin_size(self):
+        return 3e8 / (2 * (self.maximum_frequency_mhz - self.minimum_frequency_mhz) * 1e6)
+    
+    def calc_center_frequency(self):
+        return ((self.minimum_frequency_mhz + self.maximum_frequency_mhz) * 1e6) / 2
 
     def load_config(self):
         """
@@ -99,9 +108,9 @@ class RadarConfiguration:
                     # CFAR parameters
                     cfar_params = config.get('cfarParams', self.defaults['cfarParams'])
                     self.cfar_params = CFARParams(
-                        num_guard=cfar_params.get('numGuard', self.defaults['cfarParams']['numGuard']),
-                        num_train=cfar_params.get('numTrain', self.defaults['cfarParams']['numTrain']),
-                        threshold=cfar_params.get('threshold', self.defaults['cfarParams']['threshold']),
+                        num_guard=cfar_params.get('cfarNumGuard', self.defaults['cfarParams']['numGuard']),
+                        num_train=cfar_params.get('cfarNumTrainingCells', self.defaults['cfarParams']['numTrain']),
+                        threshold=cfar_params.get('cfarThreshold', self.defaults['cfarParams']['threshold']),
                     )
                     cfar_type_str = cfar_params.get('cfarType', self.defaults['cfarParams']['cfarType'])
                     self.cfar_params.cfar_type = CfarType[cfar_type_str] if cfar_type_str in CfarType.__members__ else CfarType.CASO

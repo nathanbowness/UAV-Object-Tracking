@@ -16,11 +16,6 @@ from radar.configuration.RadarConfiguration import RadarConfiguration
 from radar.radar_tracking import RadarTracking
 from video.object_tracking_yolo_v8 import track_objects
 
-def radar_tracking_task(stop_event, config: RadarConfiguration, start_time: pd.Timestamp, radar_data_queue: mp.Queue, plot_data_queue: mp.Queue):
-    radar_tracking = RadarTracking(config, start_time, radar_data_queue, plot_data_queue)
-    radar_tracking.object_tracking(stop_event)
-        
-from collections import deque
 from datetime import datetime, timedelta
 import time
 
@@ -28,11 +23,18 @@ import multiprocessing as mp
 import queue
 from datetime import datetime, timedelta
 
-def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, batching_time=0.3, plot_data_queue=None):
+def radar_tracking_task(stop_event, config: RadarConfiguration, start_time: pd.Timestamp, radar_data_queue: mp.Queue):
+    radar_tracking = RadarTracking(config, start_time, radar_data_queue)
+    radar_tracking.object_tracking(stop_event)
+
+
+def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, batching_time=0.2):
     
     count = 1
+    last_print_time = datetime.now()
+    last_remove_tracks_time = datetime.now()
     time_window = timedelta(seconds=batching_time)  # Define the window
-    max_wait_time = 0.15  # Wax wait time to check data in the queue
+    max_wait_time = 0.14  # Wax wait time to check data in the queue (just less than half the batching time)
 
     last_batch_time = None
 
@@ -49,10 +51,9 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, batc
         if last_batch_time is None:
             last_batch_time = datetime.now()
 
-        current_time = datetime.now()
         batch_window_end = last_batch_time + time_window  # Set the upper limit for the current batch window
 
-        # Fetch all image data within the 0.3-second window
+        # Fetch all image data within the batch window
         try:
             # Process buffered image data from the previous loop
             for detectionsAtTime in image_buffer:
@@ -80,7 +81,7 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, batc
         except queue.Empty:
             pass
 
-        # Fetch all radar data within the 0.3-second window
+        # Fetch all radar data within the batch window
         try:
             # Process buffered radar data from the previous loop
             for detectionsAtTime in radar_buffer:
@@ -128,18 +129,30 @@ def process_queues(stop_event, tracker, image_data_queue, radar_data_queue, batc
             radar_detections = radar_detections_in_window[-1].detections
             tracker.update_tracks(radar_detections, radar_timestamp, type="radar_only")
         else:
-            last_batch_time = current_time  # Set the start of the next batch window
+            last_batch_time = datetime.now()  # Set the start of the next batch window
             
             time.sleep(0.01) # Small sleep to avoid busy waiting
             continue
         
         count += 1
+        current_time = datetime.now()
         last_batch_time = current_time  # Set the start of the next batch window
-        if count % 25 == 0:
-            tracker.print_current_tracks(remove_tracks=False, interval=2)
+        # Print current tracks approx every 5 seconds
+        if (current_time - last_print_time).total_seconds() >= 5:
+            
+            remove = False
+            interval = batching_time*2
+            # Print current tracks with remove_tracks=True every 30 seconds, this will remove tracks that are not being updated
+            if (current_time - last_remove_tracks_time).total_seconds() >= 30:
+                remove = True
+                interval = batching_time*10
+                last_remove_tracks_time = current_time
+
+            tracker.print_current_tracks(remove_tracks=remove, interval=interval)
+            last_print_time = current_time
 
     tracker.show_tracks_plot()
-    tracker.print_current_tracks(remove_tracks=True, interval=1)
+    tracker.print_current_tracks(remove_tracks=True, interval=batching_time*2)
             
 def plot_data(plot_queue: mp.Queue, stop_event):
     while not stop_event.is_set():
@@ -182,25 +195,20 @@ if __name__ == '__main__':
         radar_config = update_radar_config(radar_config, args) # Update the radar configuration with the command line arguments
         
         radar_data_queue = mp.Queue()
-        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, radar_config, start_time, radar_data_queue, plot_data_queue))
+        radar_proc = mp.Process(name="Radar Data Coll.", target=radar_tracking_task, args=(stop_event, radar_config, start_time, radar_data_queue))
         radar_proc.start()
       
     # Create the object tracking configuration, process, queue to move data
     if not args.skip_tracking:
         tracking_config = TrackingConfiguration()
         tracking_config = update_tracking_config(tracking_config, args) # Update the video configuration with the command line arguments
+        tracking_config.max_track_distance = radar_config.bin_size_meters * 512 # Override the max distance based on radar range
         tracker = get_object_tracking_gm_phd(start_time, tracking_config)
         
         # Queue process to handle incoming data
-        tracking_proc = mp.Process(name="Tracking", target=process_queues, args=(stop_event, tracker, image_data_queue, radar_data_queue, args.batching_time, plot_data_queue))
+        tracking_proc = mp.Process(name="Tracking", target=process_queues, args=(stop_event, tracker, image_data_queue, radar_data_queue, args.batching_time))
         tracking_proc.start()
         
-    # plotting process - remove for now, provided little value
-    # if args.enable_plot:
-        
-    #     plot_data_queue = mp.Queue()
-    #     plot_data(plot_data_queue, stop_event) # Start the plot data process
-    
     try:
         while True:
             user_input = input("Type 'q' and hit ENTER to quit:\n")

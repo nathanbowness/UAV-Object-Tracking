@@ -18,7 +18,7 @@ class DetectionDetails:
 
         :return: A string describing the Detection object.
         """
-        return f"Detection(object={self.object}, detection={self.detection})"
+        return f"Detection(object={self.object}, detection={self.data})"
 
 
 class DetectionsAtTime:
