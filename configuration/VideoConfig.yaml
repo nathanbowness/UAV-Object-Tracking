@@ -21,3 +21,5 @@ cameraHorizontalFOV: 120
 cameraZoomFactor: 1.0
 imageWidth: 1920
 imageHeight: 1080
+
+videoDelayBetweenProcessingSec: 0.1

@@ -45,7 +45,8 @@ class VideoConfiguration:
             'cameraHorizontalFOV': 90,
             'cameraZoomFactor': 1.0,
             'imageWidth': 1920,
-            'imageHeight': 1080
+            'imageHeight': 1080,
+            'videoDelayBetweenProcessingSec': 0.1
         }
 
         # Default BB Coefficients if the YAML file is not found

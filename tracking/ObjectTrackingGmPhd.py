@@ -187,6 +187,26 @@ class ObjectTrackingGmPhd():
                             for label in set(labels) if label != -1])
 
         return centroids
+    
+    def cluster_measurements_only_on_x(self, detections, eps, min_samples):
+        # Extract measurements (x, y) from detections
+        measurements = np.array([[detection.data[0], detection.data[2]] for detection in detections])
+        x_values = measurements[:, 0]  # Extract x values
+
+        # Cluster only on the x values using DBSCAN
+        clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(x_values.reshape(-1, 1))
+        labels = clustering.labels_
+
+        # Filter out noise points and calculate average y for each cluster
+        centroids = []
+        for label in set(labels):
+            if label != -1:  # Ignore noise points
+                cluster_indices = labels == label
+                cluster_x = x_values[cluster_indices].mean()  # Average x
+                cluster_y = measurements[cluster_indices, 1].mean()  # Average y
+                centroids.append([cluster_x, cluster_y])
+
+        return np.array(centroids)
         
     def update_tracks(self, detections: List[DetectionDetails], timestamp: datetime, type: str = None, print_coord: bool = False):
         """
@@ -201,7 +221,9 @@ class ObjectTrackingGmPhd():
         timestamp = timestamp.replace(microsecond=0)
         
         # Get the measurements after they've been clustered
-        measurements = self.cluster_measurements(detections, self.cluster_distance, self.min_detections_to_cluster)        
+        # measurements = self.cluster_measurements(detections, self.cluster_distance, self.min_detections_to_cluster)
+        measurements = self.cluster_measurements_only_on_x(detections, self.cluster_distance, self.min_detections_to_cluster)
+         
         detection_set = set()
         # iterate over the centroids to create a new set of detection for this time instance.
         for idet in range(len(measurements)):
@@ -226,11 +248,16 @@ class ObjectTrackingGmPhd():
         
         self.birth_component.timestamp = time
         current_state.add(self.birth_component)
-
+        
         hypotheses = self.hypothesiser.hypothesise(current_state, detection_set, timestamp=time, order_by_detection=True)
-
-        updated_states = self.updater.update(hypotheses)
-        self.reduced_states = set(self.reducer.reduce(updated_states))
+        
+        try:
+            updated_states = self.updater.update(hypotheses)
+            self.reduced_states = set(self.reducer.reduce(updated_states))
+        except Exception as e:
+            print("Issue adding hypothesis: "+ e)
+            self.tracker_count += 1
+            return
 
         added_detect_to_print = []
 

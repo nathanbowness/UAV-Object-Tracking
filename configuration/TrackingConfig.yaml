@@ -7,20 +7,20 @@ filters:
   gmPHD:
     birthCovariance: 150 # covariance of the birth state in a distance of meters - by default this will set to the maximum resolution range of the sensors!
     expectedVelocity: 1 # expected velocity of the tracked object in meters per second
-    noiseCovarianceDistance: 2 # covariance of the noise in a distance of meters
-    defaultCovarianceDistance: 2 # default covariance of the tracked object in a distance of meters
+    noiseCovarianceDistance: 4 # covariance of the noise in a distance of meters
+    defaultCovarianceDistance: 4 # default covariance of the tracked object in a distance of meters
     defaultConvarianceVelocity: 0.3 # default covariance of the tracked object in a velocity of meters per second
     probabilityOfDetection: 0.8 # probability of detection
     probabilityOfDeath: 0.01 # probability of death
     clusterRate: 7.0
 
-    mergeThreshold: 5 # Threshold Squared Mahalanobis distance
+    mergeThreshold: 4 # Threshold Squared Mahalanobis distance
     pruneThreshold: 0.00000001  # Threshold component weight i.e. 1e-8
-    stateThreshold: 0.25
+    stateThreshold: 0.20
 
 # Detection clustering configuration
 minDetectionsToCluster: 1
-maxDistanceBetweenClusteredObjectsM: 5
+maxDistanceBetweenClusteredObjectsM: 4
 
 # Tracking plot configuration 
 trackTailLength: 0.1 # O to 1, 0 means no tail, 1 means full tail

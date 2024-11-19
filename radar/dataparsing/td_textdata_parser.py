@@ -7,29 +7,32 @@ from datetime import datetime
 from radar.radarprocessing.TDData import TDData
 
 def extract_timestamp_from_filename(filename):
-    # Extract the timestamp with milliseconds from the filename
-    match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.\d{3})', filename)
-    if match:
-        timestamp_str = match.group(1)
-        # Replace underscores with spaces to match the format
-        timestamp_str = timestamp_str.replace('_', ' ')
-        # Parse the timestamp string using datetime
-        dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S.%f')
-    else:
-        # Try to extract the timestamp without milliseconds
-        match = re.search(r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})', filename)
-        if match:
-            timestamp_str = match.group(1)
-            # Replace underscores with spaces to match the format
-            timestamp_str = timestamp_str.replace('_', ' ')
-            # Parse the timestamp string using datetime
-            dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S')
-        else:
-            raise ValueError(f"Filename does not match the expected format: {filename}")
+    """
+    Extract the last timestamp from a file or folder path.
+    If multiple timestamps are found, the last one is returned.
+    """
+    # Regex pattern for timestamps with optional milliseconds
+    timestamp_pattern = r'(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}(?:\.\d{3})?)'
 
-    # Convert to pd.Timestamp
-    timestamp = pd.Timestamp(dt)
-    return timestamp
+    # Find all matches for the timestamp pattern
+    matches = re.findall(timestamp_pattern, filename)
+    if matches:
+        # Get the last match (or the second one explicitly, if needed)
+        timestamp_str = matches[-1]  # Change to matches[1] if you want the second explicitly
+        
+        # Replace underscores with spaces to match datetime format
+        timestamp_str = timestamp_str.replace('_', ' ')
+        
+        # Parse the timestamp (check if milliseconds are included)
+        if '.' in timestamp_str:
+            dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S.%f')
+        else:
+            dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H-%M-%S')
+        
+        # Convert to Pandas Timestamp
+        return pd.Timestamp(dt)
+    else:
+        raise ValueError(f"No valid timestamp found in path: {filename}")
 
 def read_columns(file_path) -> TDData:
     columns = {

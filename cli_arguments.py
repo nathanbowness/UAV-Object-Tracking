@@ -36,6 +36,7 @@ def define_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument('--video-source', type=str, default=None, help='source of the video data, supports all yolo default options')
     parser.add_argument('--disable-save-video', action='store_true', help='disable saving the video data')
     parser.add_argument('--show-live-video', action='store_true', help='if the live video feed should be shown, this requires a display')
+    parser.add_argument('--video-proc-delay', type=float, default=0.0, help='time to wait before the next video frame is processed')
     
     # Options for the tracking configuration
     parser.add_argument('--tracking-config', type=str, default='/configuration/TrackingConfig.yaml', help='tracking configuration file path')
@@ -79,6 +80,8 @@ def update_video_config(config:VideoConfiguration, args:argparse.Namespace) -> V
         config.saveProcessedVideo = False
     if args.show_live_video:
         config.showVideo = True
+    if args.video_proc_delay > 0:
+        config.videoDelayBetweenProcessingSec = args.video_proc_delay
     
     return config
 
