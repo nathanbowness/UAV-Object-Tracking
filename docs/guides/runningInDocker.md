@@ -63,13 +63,13 @@ The below command will mount a local output folder to the container, feel free t
 === "Linux"
 
     ``` bash
-    docker run -it tracking-image -v "$(pwd)"/output:/output
+    docker run -it -v "$(pwd)"/output:/output tracking-image
     ```
 
 === "Jetson5"
 
     ``` bash
-    docker run --ipc=host --runtime=nvidia -it tracking-image -v "$(pwd)"/output:/output
+    docker run --ipc=host --runtime=nvidia -it -v "$(pwd)"/output:/output tracking-image 
     ```
 
 ## Configuration
@@ -99,13 +99,13 @@ To mount configuration files that you can change locally, and will get used by t
 === "Linux"
 
     ``` bash
-    docker run -it tracking-image -v "$(pwd)"/configuration:/configuration
+    docker run -it -v "$(pwd)"/configuration:/configuration tracking-image 
     ```
 
 === "Jetson5"
 
     ``` bash
-    docker run --ipc=host --runtime=nvidia -it tracking-image -v "$(pwd)"/configuration:/configuration
+    docker run --ipc=host --runtime=nvidia -it -v "$(pwd)"/configuration:/configuration tracking-image
     ```
 
 ### Running with Different Configurations - Samples
