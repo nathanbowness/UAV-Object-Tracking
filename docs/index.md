@@ -58,9 +58,9 @@ flowchart LR
 
 
 ## Algorithm for Data Synchronization
-The system processes data from both radar and video sensors, each sending data to their respective queues: the radar processing queue and the image processing queue. Data from both sensors can arrive at different rates, so a batching mechanism with a configurable synchronization periods is used.
+The system processes data from both radar and video sensors, each sending data to the same queues. Data from both sensors can arrive at different rates, so a batching mechanism with a configurable synchronization periods is used to pull data from the queue.
 
-Every *x* seconds, the time for the configurable syncrhonization period, all available data is retrieved from both queues. This window is chosen because it ensures that both radar and video processing have completed at least once in that period. If both radar and video data are available within the same batch, they are combined and used for tracking. If only one is available, it is used alone.
+Every *x* seconds, the time for the configurable syncrhonization period, all available data is retrieved from the queue. This window is chosen because it ensures that both radar and video processing have completed at least once in that period. If both radar and video data are available within the same batch, they are combined and used for tracking. If only one is available, it is used alone.
 
 When multiple detections are present within a synchronization period, the latest detection is used for tracking. Future improvements will allow either taking an average of the detections or selecting the detection with the highest confidence score for better tracking accuracy.
 
