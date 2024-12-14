@@ -20,4 +20,7 @@ cameraZoomFactor: 1.0
 imageWidth: 640
 imageHeight: 480
 
+# Time delay between frame processing, so the video is closer to the rate of the radar processing
+videoDelayBetweenProcessingSec: 0.1
+
 

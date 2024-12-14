@@ -71,6 +71,8 @@ nav:
     - Setting Up Dev Environment: setup/devEnvironment.md
     - Enable Webcam In Container: setup/usingWebcamInContainer.md
     - Calibrating BB Coefficients: setup/calibratingBBCoeff.md
+  - Troubleshooting:
+    - Camera Connectivity: troubleshooting/cameraConnection.md
 
 markdown_extensions:
   # Enable mermaid diagrams

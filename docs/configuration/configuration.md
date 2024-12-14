@@ -67,6 +67,8 @@ The radar configuration can be found in the YoloConfig.yaml file.
     cameraZoomFactor: 1.0
     imageWidth: 640
     imageHeight: 352
+
+    videoDelayBetweenProcessingSec: 0.1
     ```
 
 ## Tracking Configuration File

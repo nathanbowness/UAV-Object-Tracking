@@ -46,7 +46,7 @@ This configuration is useful if you'd only like to collect video data and see ho
         docker run --ipc=host --runtime=nvidia -it tracking-image
         ```
 
-2. Run the tracking program, with video processing and radar tracking disabled.
+2. Run the tracking program, with video processing and radar tracking disabled using default configuration.
 ```bash
 python3 tracking.py --skip-radar
 ```
@@ -55,4 +55,28 @@ python3 tracking.py --skip-radar
 When running the tracking program, include the `--disable-save-video` option.
 ```bash
 python3 tracking.py --disable-save-video
+```
+
+
+### Runing with a Local Camera
+
+1.  Run the Container Interactively
+
+
+    === "Linux"
+
+        ``` bash
+        docker run -it -v "$(pwd)/output:/output" --device=/dev/video0:/dev/video0 tracking-image 
+        ```
+
+    === "Jetson5"
+
+        ``` bash
+        docker run --ipc=host --runtime=nvidia -it -v "$(pwd)/output:/output" --device=/dev/video0:/dev/video0 tracking-image
+        ```
+
+2. Run the tracking program with a local device, specified by the integer. This will skip the radar processing, but will include the tracking.
+
+```
+python3 tracking.py --skip-radar --video-source "0"
 ```
